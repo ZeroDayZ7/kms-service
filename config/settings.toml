@@ -41,6 +41,6 @@ auth_per_second = 50
 auth_burst = 100
 
 [crypto]
-# Master Key w Base64 (po zdekodowaniu dokładnie 32 bajty dla AES-256-GCM Envelope Encryption)
+# Master Key w Base64
 master_key_b64 = "dWRGdk1pZ0lqNmIzeXo4bEF1SEpvaU5qTndqRWxYOWU="
 default_key_ttl_days = 365
