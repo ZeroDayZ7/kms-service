@@ -27,3 +27,6 @@ This project demonstrates **enterprise-grade Hexagonal / Clean Architecture** wi
 - **Structured logging**
   - Console logs + JSON file logging with `tracing` spans and request tracing middleware
 - **Graceful shutdown** with configurable timeout
+
+[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg?style=flat-square&logo=rust)](https://www.rust-lang.org/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
