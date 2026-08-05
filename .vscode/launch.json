@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Rust Server",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/http_server_rs",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false,
+      "preLaunchTask": "cargo build"
+    }
+  ]
+}

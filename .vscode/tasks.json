@@ -1,0 +1,78 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "cargo check",
+      "type": "shell",
+      "command": "cargo check",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo build",
+      "type": "shell",
+      "command": "cargo build",
+      "group": "build",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo test",
+      "type": "shell",
+      "command": "cargo test",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo test (no capture)",
+      "type": "shell",
+      "command": "cargo test -- --nocapture",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo test (ignored)",
+      "type": "shell",
+      "command": "cargo test -- --ignored",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "cargo test (single test)",
+      "type": "shell",
+      "command": "cargo test",
+      "args": ["${input:testName}"],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": ["$rustc"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "testName",
+      "type": "promptString",
+      "description": "Enter test name to run"
+    }
+  ]
+}

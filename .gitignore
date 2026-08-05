@@ -1,0 +1,5 @@
+/target
+.env
+combined.txt
+/logs
+temp.md

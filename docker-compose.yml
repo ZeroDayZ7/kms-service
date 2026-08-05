@@ -1,0 +1,86 @@
+x-common-settings: &common-settings
+  restart: ${DOCKER_RESTART_POLICY:-unless-stopped}
+  networks:
+    - zero-day-network
+
+x-common-healthcheck: &common-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 15s
+
+services:
+  mongodb:
+    <<: *common-settings
+    image: mongo:8
+    container_name: zero_day_mongo
+
+    ports:
+      - "27017:27017"
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${DATABASE__NAME}
+
+      MONGO_APP_USER: ${DATABASE__USER}
+      MONGO_APP_PASSWORD: ${DATABASE__PASSWORD}
+      MONGO_APP_DATABASE: ${DATABASE__NAME}
+
+    volumes:
+      - mongo_data:/data/db
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      <<: *common-healthcheck
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username",
+          "${MONGO_ROOT_USER}",
+          "--password",
+          "${MONGO_ROOT_PASSWORD}",
+          "--authenticationDatabase",
+          "admin",
+          "--eval",
+          "db.getSiblingDB('admin').adminCommand('ping')",
+        ]
+
+  redis:
+    <<: *common-settings
+    image: redis:8.6-alpine
+    container_name: zero_day_redis
+
+    ports:
+      - "6379:6379"
+
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS__PASSWORD:-change_me}
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1"
+      - --loglevel
+      - warning
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      <<: *common-healthcheck
+      test: ["CMD", "redis-cli", "-a", "${REDIS__PASSWORD:-change_me}", "ping"]
+
+volumes:
+  mongo_data:
+    driver: local
+
+  redis_data:
+    driver: local
+
+networks:
+  zero-day-network:
+    driver: bridge

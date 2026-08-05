@@ -1,0 +1,51 @@
+# config/settings.toml
+
+[server]
+host = "127.0.0.1"
+port = 7000
+shutdown_timeout = 30
+
+[log]
+level = "debug"
+
+[cors]
+allowed_methods = ["GET", "POST", "OPTIONS", "PATCH"]
+max_age = 3600
+
+[cors.allowed_origin]
+type = "List"
+value = [
+  "http://localhost:3000",
+  "https://myapp.com",
+  "https://admin.myapp.com"
+]
+
+[database]
+host = "127.0.0.1"
+port = 27017
+name = "zero_day_db"
+pool_size = 5
+auth_source = "zero_day_db"
+
+[redis]
+host = "127.0.0.1"
+port = 6379
+db = 0
+
+[rate_limit]
+global_per_second = 50
+global_burst = 100
+health_per_second = 50
+health_burst = 100
+auth_per_second = 50
+auth_burst = 100
+
+[crypto]
+# Główny sekret serwera (pepper) - ZMIEŃ TO NA PRODUKCJI!
+secret_key = "d7a8f9e2b4c1d5e8a9b0c3d2e1f4a5b6"
+token_expiry_hours = 24
+
+# Parametry Argon2id (bezpieczny standard)
+argon2_m_cost = 19456  # 19 MiB RAM
+argon2_t_cost = 2      # Liczba iteracji
+argon2_p_cost = 1      # Liczba wątków (parallelism)
