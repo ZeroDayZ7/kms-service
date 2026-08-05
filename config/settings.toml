@@ -23,9 +23,9 @@ value = [
 [database]
 host = "127.0.0.1"
 port = 27017
-name = "zero_day_db"
+name = "kms_db"
 pool_size = 5
-auth_source = "zero_day_db"
+auth_source = "admin"
 
 [redis]
 host = "127.0.0.1"
@@ -41,11 +41,6 @@ auth_per_second = 50
 auth_burst = 100
 
 [crypto]
-# Główny sekret serwera (pepper) - ZMIEŃ TO NA PRODUKCJI!
-secret_key = "d7a8f9e2b4c1d5e8a9b0c3d2e1f4a5b6"
-token_expiry_hours = 24
-
-# Parametry Argon2id (bezpieczny standard)
-argon2_m_cost = 19456  # 19 MiB RAM
-argon2_t_cost = 2      # Liczba iteracji
-argon2_p_cost = 1      # Liczba wątków (parallelism)
+# Master Key w Base64 (po zdekodowaniu dokładnie 32 bajty dla AES-256-GCM Envelope Encryption)
+master_key_b64 = "dWRGdk1pZ0lqNmIzeXo4bEF1SEpvaU5qTndqRWxYOWU="
+default_key_ttl_days = 365

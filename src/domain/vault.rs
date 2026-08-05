@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct EncryptedCV {
+pub struct EncryptedSecret {
     pub id: String,
     #[serde(with = "serde_bytes")]
     pub data: Vec<u8>,
@@ -13,8 +13,8 @@ pub struct EncryptedCV {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DecryptedCV {
-    pub name: String,
-    pub experience: Vec<String>,
-    pub contact: String,
+pub struct DecryptedSecret {
+    pub id: String,
+    pub payload: Vec<u8>,
+    pub metadata: Option<String>,
 }

@@ -1,11 +1,7 @@
-// Copyright 2026 ZeroDayZ7
-// Licensed under the Apache License, Version 2.0
-// See LICENSE file for details.
-
+// src/infrastructure/mongodb_vault.rs
 use crate::domain::VaultRepository;
-use crate::domain::vault::EncryptedCV;
-use crate::errors::AppError;
-use crate::errors::AppResult;
+use crate::domain::vault::EncryptedSecret;
+use crate::errors::{AppError, AppResult};
 use mongodb::{Database, bson::doc};
 use std::sync::Arc;
 use std::time::Duration;
@@ -28,8 +24,8 @@ impl MongoVaultRepository {
 
 #[async_trait]
 impl VaultRepository for MongoVaultRepository {
-    async fn get_cv_by_id(&self, id: &str) -> AppResult<Option<EncryptedCV>> {
-        let collection = self.db.collection::<EncryptedCV>(&self.collection_name);
+    async fn get_secret_by_id(&self, id: &str) -> AppResult<Option<EncryptedSecret>> {
+        let collection = self.db.collection::<EncryptedSecret>(&self.collection_name);
         let filter = doc! { "id": id };
 
         let result = timeout(Duration::from_secs(5), collection.find_one(filter))

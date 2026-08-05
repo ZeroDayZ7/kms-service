@@ -1,5 +1,5 @@
 [package]
-name = "http_server_rs"
+name = "kms-service"
 version = "0.1.0"
 edition = "2024"
 
@@ -37,11 +37,17 @@ thiserror = "2.0.19"
 anyhow = "1.0.104"
 mongodb = "3.8.0"
 async-trait = "0.1.91"
-aes-gcm = "0.10.3"
-argon2 = { version = "0.5.3", features = ["std"] }
 rand = "0.10"
 base64 = "0.22.1"
 serde_bytes = "0.11.19"
+
+# Asymmetric Cryptography & Security for KMS
+ed25519-dalek = { version = "2.1", features = ["serde", "rand_core", "pkcs8"] }
+x25519-dalek = { version = "2.0", features = ["static_secrets"] }
+zeroize = { version = "1.8", features = ["zeroize_derive"] }
+pkcs8 = { version = "0.10", features = ["pem", "std"] }
+aes-gcm = "0.10.3"
+pem = "3.0"
 
 [dev-dependencies]
 tokio = { version = "1.53", features = ["full"] }

@@ -35,7 +35,7 @@ impl RedisManager {
             Some(reconnect_policy),
         );
 
-        let _ = client.connect();
+        client.connect();
 
         match tokio::time::timeout(Duration::from_secs(5), client.wait_for_connect()).await {
             Ok(Ok(_)) => {

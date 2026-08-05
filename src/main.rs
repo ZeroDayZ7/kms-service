@@ -1,6 +1,6 @@
 // Main entry point for the HTTP server application.
-use http_server_rs::server::state::AppState;
-use http_server_rs::{config, server};
+use kms_service::config;
+use kms_service::server::{self, state::AppState};
 
 use anyhow::{Context, anyhow};
 use std::net::SocketAddr;

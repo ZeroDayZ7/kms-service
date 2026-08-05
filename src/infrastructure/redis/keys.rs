@@ -13,7 +13,7 @@ impl RedisKey {
     }
 
     pub fn user_profile(id: &UserId) -> Self {
-        Self(format!("user:profile:{}", id.to_string()))
+        Self(format!("user:profile:{id}"))
     }
 
     pub fn rate_limit(route: ApiRoute, ip: &ClientIp) -> Self {

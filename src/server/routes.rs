@@ -1,3 +1,4 @@
+// src/server/routes.rs
 use crate::handlers::{auth, health, vault};
 use crate::server::middleware::{self, RateLimitLayers};
 use crate::server::state::AppState;
@@ -29,7 +30,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route(
             "/vault/unlock",
-            post(vault::unlock_cv).layer(rate_limits.auth.clone()),
+            post(vault::unlock_secret).layer(rate_limits.auth.clone()),
         )
         .route_layer(rate_limits.global.clone())
         .layer(redis_mw)

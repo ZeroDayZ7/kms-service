@@ -1,7 +1,8 @@
-use crate::application::use_cases::UnlockCvUseCase;
+// src/server/state.rs
+use crate::application::use_cases::UnlockSecretUseCase;
 use crate::config::Settings;
 use crate::errors::AppResult;
-use crate::infrastructure::crypto::aes_service::AesCryptoService;
+use crate::infrastructure::crypto::kms_service::KmsCryptoService;
 use crate::infrastructure::redis::client::RedisManager;
 use crate::infrastructure::redis::rate_limiter::RedisRateLimiter;
 use crate::infrastructure::serialization::JsonDecoder;
@@ -11,12 +12,11 @@ use crate::services::user_service::UserService;
 use mongodb::Database;
 use std::sync::Arc;
 
-// JsonDecoder nie przyjmuje argumentów generycznych na poziomie definicji struktury
-pub type ConcreteUnlockCvUseCase =
-    UnlockCvUseCase<MongoVaultRepository, AesCryptoService, JsonDecoder>;
+pub type ConcreteUnlockSecretUseCase =
+    UnlockSecretUseCase<MongoVaultRepository, KmsCryptoService, JsonDecoder>;
 
 pub struct UseCases {
-    pub unlock_cv: Arc<ConcreteUnlockCvUseCase>,
+    pub unlock_secret: Arc<ConcreteUnlockSecretUseCase>,
 }
 
 #[derive(Clone)]
@@ -38,18 +38,18 @@ impl AppState {
         let vault_repo = Arc::new(MongoVaultRepository::new(Arc::clone(&db_pool)));
         let user_repo = Arc::new(MongoUserRepository::new(Arc::clone(&db_pool)));
 
-        let crypto_service = Arc::new(AesCryptoService::new(settings.crypto.clone()));
+        let crypto_service = Arc::new(KmsCryptoService::new(&settings.crypto)?);
         let decoder = Arc::new(JsonDecoder);
 
-        let unlock_cv_use_case =
-            Arc::new(UnlockCvUseCase::new(vault_repo, crypto_service, decoder));
+        let unlock_secret_use_case =
+            Arc::new(UnlockSecretUseCase::new(vault_repo, crypto_service, decoder));
 
         let _user_service = Arc::new(UserService::new(user_repo));
 
         Ok(Self {
             settings,
             use_cases: Arc::new(UseCases {
-                unlock_cv: unlock_cv_use_case,
+                unlock_secret: unlock_secret_use_case,
             }),
             redis_rate_limiter: Arc::new(RedisRateLimiter::new(Arc::clone(&redis_manager)).await),
             db: mongo_db,
