@@ -5,11 +5,12 @@
       "name": "Debug Rust Server",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/target/debug/http_server_rs",
+      "cargo": {
+        "args": ["build", "--bin=kms-service"]
+      },
       "args": [],
       "cwd": "${workspaceFolder}",
-      "stopOnEntry": false,
-      "preLaunchTask": "cargo build"
+      "stopOnEntry": false
     }
   ]
 }

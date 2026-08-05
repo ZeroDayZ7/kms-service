@@ -38,7 +38,7 @@ pub fn router(state: AppState) -> Router {
             post(keys::generate_key_handler).layer(rate_limits.auth.clone()),
         )
         .route(
-            "/api/v1/keys/public/:service_id/:algorithm",
+            "/api/v1/keys/public/{service_id}/{algorithm}",
             get(keys::get_public_key_handler).layer(rate_limits.health.clone()),
         )
         .route(

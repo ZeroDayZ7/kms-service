@@ -2,7 +2,7 @@
 use kms_service::config;
 use kms_service::server::{self, state::AppState};
 
-use anyhow::{Context, anyhow};
+use anyhow::Context;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::{error, info};
@@ -10,8 +10,9 @@ use tracing::{error, info};
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
-        eprintln!("❌ KRYTYCZNY BŁĄD {:?}", e);
-        error!(error = %e, "❌ Fatal application error");
+        // Użyj {:#}, aby rozwinąć cały łańcuch błędów (wyświetla `caused by: ...`)
+        eprintln!("❌ KRYTYCZNY BŁĄD: {:#}", e);
+        error!(error = ?e, "❌ Fatal application error");
         std::process::exit(1);
     }
 }
@@ -36,7 +37,7 @@ async fn run() -> anyhow::Result<()> {
     // -------------------------
     let state = AppState::new(settings.clone())
         .await
-        .map_err(|e| anyhow!("Krytyczny błąd inicjalizacji AppState: {}", e))?;
+        .context("Krytyczny błąd inicjalizacji AppState")?;
 
     info!("🧠 Application state initialized");
 
