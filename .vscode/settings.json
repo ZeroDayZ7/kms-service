@@ -7,7 +7,6 @@
     // "**/.vscode": true,
     // "**/tests": true,
     "LICENSE": true
-    // "logs": true
     // ".env.example": true
     // "README.md": true
     // "**/.env": true
@@ -25,16 +24,9 @@
     "**/combined.txt": true
   },
 
-  // === Rust / Cargo ===
-  "rust-analyzer.cargo.loadOutDirsFromCheck": true,
-  "rust-analyzer.procMacro.enable": true,
-
   // === Formatowanie ===
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": true
   // "[rust]": {
   //     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   // },
-
-  // === Terminal ===
-  "terminal.integrated.shell.windows": "powershell.exe"
 }
