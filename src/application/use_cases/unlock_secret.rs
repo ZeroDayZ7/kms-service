@@ -1,14 +1,14 @@
 // src/application/use_cases/unlock_secret.rs
-use std::sync::Arc;
 use crate::{
     domain::{
         VaultRepository,
-        crypto::{KmsCryptoService, EncryptedPrivateKey},
+        crypto::{EncryptedPrivateKey, KmsCryptoService},
         ports::decoder::Decoder,
         vault::DecryptedSecret,
     },
     errors::{AppError, AppResult},
 };
+use std::sync::Arc;
 
 pub struct UnlockSecretUseCase<R, C, D>
 where
@@ -27,11 +27,7 @@ where
     C: KmsCryptoService,
     D: Decoder<DecryptedSecret>,
 {
-    pub fn new(
-        repo: Arc<R>,
-        crypto: Arc<C>,
-        decoder: Arc<D>,
-    ) -> Self {
+    pub fn new(repo: Arc<R>, crypto: Arc<C>, decoder: Arc<D>) -> Self {
         Self {
             repo,
             crypto,

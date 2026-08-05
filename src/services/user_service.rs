@@ -2,11 +2,11 @@
 // Licensed under the Apache License, Version 2.0
 // See LICENSE file for details.
 
-use async_trait::async_trait;
 use crate::domain::UserRepository;
 use crate::domain::ports::services::UserServicePort;
 use crate::domain::user::User;
 use crate::errors::{AppError, AppResult};
+use async_trait::async_trait;
 use std::sync::Arc;
 use tracing::instrument;
 

@@ -4,6 +4,8 @@ use std::fmt;
 use uuid::Uuid;
 use zeroize::ZeroizeOnDrop;
 
+pub use crate::domain::crypto::EncryptedPrivateKey;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ServiceId(pub String);
 
@@ -29,12 +31,6 @@ pub enum KeyAlgorithm {
 pub enum KeyPurpose {
     Signing,
     Encryption,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EncryptedPrivateKey {
-    pub ciphertext: Vec<u8>,
-    pub nonce: Vec<u8>,
 }
 
 #[derive(ZeroizeOnDrop)]

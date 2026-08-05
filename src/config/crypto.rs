@@ -1,5 +1,5 @@
 // src/config/crypto.rs
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Deserializer};
 use std::ops::Deref;
 
@@ -21,9 +21,9 @@ impl<'de> Deserialize<'de> for MasterKeyB64 {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        let decoded = BASE64
-            .decode(&s)
-            .map_err(|_| serde::de::Error::custom("master_key_b64 must be a valid Base64 string"))?;
+        let decoded = BASE64.decode(&s).map_err(|_| {
+            serde::de::Error::custom("master_key_b64 must be a valid Base64 string")
+        })?;
 
         if decoded.len() != 32 {
             return Err(serde::de::Error::custom(

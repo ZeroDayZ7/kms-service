@@ -2,11 +2,11 @@
 use crate::domain::VaultRepository;
 use crate::domain::vault::EncryptedSecret;
 use crate::errors::{AppError, AppResult};
+use async_trait::async_trait;
 use mongodb::{Database, bson::doc};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
-use async_trait::async_trait;
 
 pub struct MongoVaultRepository {
     db: Arc<Database>,

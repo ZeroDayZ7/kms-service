@@ -1,8 +1,8 @@
 use aes_gcm::{
-    aead::{Aead, KeyInit, OsRng, rand_core::RngCore},
     Aes256Gcm, Nonce,
+    aead::{Aead, KeyInit, OsRng, rand_core::RngCore},
 };
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{SigningKey, pkcs8::EncodePublicKey};
 use pkcs8::LineEnding;
 use x25519_dalek::{PublicKey as X25519PublicKey, StaticSecret};
@@ -41,7 +41,9 @@ impl KmsCryptoServiceTrait for KmsCryptoService {
 
         let public_key_pem = verifying_key
             .to_public_key_pem(LineEnding::LF)
-            .map_err(|e| AppError::CryptoError(format!("Failed to encode Ed25519 public key to PEM: {e}")))?;
+            .map_err(|e| {
+                AppError::CryptoError(format!("Failed to encode Ed25519 public key to PEM: {e}"))
+            })?;
 
         Ok(RawKeyPair {
             public_key_pem,
@@ -54,7 +56,10 @@ impl KmsCryptoServiceTrait for KmsCryptoService {
         let secret = StaticSecret::random_from_rng(rng);
         let public = X25519PublicKey::from(&secret);
 
-        let public_key_pem = pem::encode(&pem::Pem::new("X25519 PUBLIC KEY", public.as_bytes().to_vec()));
+        let public_key_pem = pem::encode(&pem::Pem::new(
+            "X25519 PUBLIC KEY",
+            public.as_bytes().to_vec(),
+        ));
 
         Ok(RawKeyPair {
             public_key_pem,
@@ -99,7 +104,11 @@ impl KmsCryptoServiceTrait for KmsCryptoService {
 
         let decrypted = cipher
             .decrypt(nonce, encrypted.ciphertext.as_slice())
-            .map_err(|_| AppError::CryptoError("Envelope decryption failed: invalid key or tampered data".into()))?;
+            .map_err(|_| {
+                AppError::CryptoError(
+                    "Envelope decryption failed: invalid key or tampered data".into(),
+                )
+            })?;
 
         Ok(decrypted)
     }

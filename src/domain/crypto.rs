@@ -14,7 +14,7 @@ pub enum KeyPurpose {
     Encryption,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EncryptedPrivateKey {
     pub ciphertext: Vec<u8>,
     pub nonce: Vec<u8>,

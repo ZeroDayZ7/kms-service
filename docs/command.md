@@ -1,11 +1,9 @@
-# rate_limiter
+cargo fmt
 
-```ps
- 1..20 | ForEach-Object {
->>     try {
->>         (Invoke-WebRequest -Uri "http://localhost:8080/health" -Method Get).StatusCode
->>     } catch {
->>         $_.Exception.Response.StatusCode.Value__
->>     }
->> }
-```
+cargo fmt --check
+
+cargo check --all-targets --all-features
+
+cargo clippy --all-targets --all-features -- -D warnings
+
+cargo test

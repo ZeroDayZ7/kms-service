@@ -1,7 +1,10 @@
-// Copyright 2026 ZeroDayZ7
-// Licensed under the Apache License, Version 2.0
-// See LICENSE file for details.
-
+// src/handlers/mod.rs
 pub mod auth;
 pub mod health;
+pub mod keys;
 pub mod vault;
+
+pub use auth::*;
+pub use health::*;
+pub use keys::*;
+pub use vault::*;
