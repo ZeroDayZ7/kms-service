@@ -39,7 +39,7 @@ mod tests {
         let hex = "507f1f77bcf86cd799439011";
         let res = UserId::parse(hex);
         assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_hex(), hex);
+        assert_eq!(res.unwrap().as_inner(), hex);
     }
 
     #[test]
