@@ -1,9 +1,9 @@
+// src/infrastructure/mongodb/keys.rs
 use std::sync::Arc;
 
-use chrono::{DateTime, Utc};
 use mongodb::{
     IndexModel,
-    bson::{Binary, doc, spec::BinarySubtype},
+    bson::{Binary, DateTime as BsonDateTime, doc, spec::BinarySubtype},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -30,8 +30,8 @@ struct MongoKeyPairDocument {
     pub nonce: Binary,
     pub version: i32,
     pub is_active: bool,
-    pub created_at: String,
-    pub expires_at: Option<String>,
+    pub created_at: BsonDateTime,
+    pub expires_at: Option<BsonDateTime>,
 }
 
 pub struct MongoKeyRepository {
@@ -80,8 +80,8 @@ impl KeyRepository for MongoKeyRepository {
             },
             version: key_pair.version as i32,
             is_active: key_pair.is_active,
-            created_at: key_pair.created_at.to_rfc3339(),
-            expires_at: key_pair.expires_at.map(|t| t.to_rfc3339()),
+            created_at: key_pair.created_at.into(),
+            expires_at: key_pair.expires_at.map(Into::into),
         };
 
         self.collection().insert_one(doc).await?;
@@ -165,20 +165,8 @@ fn map_doc_to_entity(doc: MongoKeyPairDocument) -> AppResult<KeyPairEntity> {
         }
     };
 
-    let created_at = DateTime::parse_from_rfc3339(&doc.created_at)
-        .map_err(|e| AppError::Internal(format!("Invalid created_at date in database: {}", e)))?
-        .with_timezone(&Utc);
-
-    let expires_at = match doc.expires_at {
-        Some(ref date_str) => Some(
-            DateTime::parse_from_rfc3339(date_str)
-                .map_err(|e| {
-                    AppError::Internal(format!("Invalid expires_at date in database: {}", e))
-                })?
-                .with_timezone(&Utc),
-        ),
-        None => None,
-    };
+    let created_at = doc.created_at.to_chrono();
+    let expires_at = doc.expires_at.map(|dt| dt.to_chrono());
 
     Ok(KeyPairEntity {
         id,
