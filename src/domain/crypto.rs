@@ -1,3 +1,4 @@
+// src/domain/crypto.rs
 use crate::errors::AppResult;
 use serde::{Deserialize, Serialize};
 use zeroize::ZeroizeOnDrop;

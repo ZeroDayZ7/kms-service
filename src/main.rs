@@ -27,7 +27,7 @@ async fn run() -> anyhow::Result<()> {
     // -------------------------
     // 2. LOGGING
     // -------------------------
-    server::logger::init_logging(&settings.log.level);
+    server::logger::init_logging(settings.log.level);
 
     info!("⚙️ Configuration loaded");
 
@@ -44,7 +44,7 @@ async fn run() -> anyhow::Result<()> {
     // 4. BOOTSTRAP KEYS (Inicjalizacja kluczy na podstawie ACL)
     // -------------------------
     bootstrap_keys(
-        &state.acl_settings,
+        &settings.acl, // <-- POPRAWIONO: przekazujemy referencję do settings.acl
         state.key_repo.clone(),
         state.crypto_service.clone(),
     )

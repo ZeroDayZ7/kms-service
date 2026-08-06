@@ -1,3 +1,4 @@
+// src/domain/keys/models.rs
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;

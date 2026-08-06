@@ -1,3 +1,4 @@
+// src/server/middleware/logging.rs
 use axum::body::Body;
 use axum::http::Request;
 use axum::response::Response;
@@ -5,6 +6,7 @@ use std::time::Duration;
 use tower_http::trace::TraceLayer;
 use tracing::Span;
 
+#[allow(clippy::type_complexity)]
 pub fn http_trace_layer() -> TraceLayer<
     tower_http::classify::SharedClassifier<tower_http::classify::ServerErrorsAsFailures>,
     impl Fn(&Request<Body>) -> Span + Clone,

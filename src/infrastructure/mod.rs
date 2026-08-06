@@ -4,4 +4,4 @@ pub mod mongodb;
 pub mod redis;
 pub mod serialization;
 
-pub use mongodb::{init_mongo, MongoKeyRepository, MongoUserRepository, MongoVaultRepository};
+pub use mongodb::{MongoKeyRepository, MongoUserRepository, MongoVaultRepository, init_mongo};

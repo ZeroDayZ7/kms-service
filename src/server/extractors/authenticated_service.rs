@@ -3,11 +3,7 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
 
-use crate::{
-    domain::keys::models::ServiceId,
-    errors::AppError,
-    server::state::AppState,
-};
+use crate::{domain::keys::models::ServiceId, errors::AppError, server::state::AppState};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -16,7 +12,10 @@ pub struct AuthenticatedService(pub ServiceId);
 impl FromRequestParts<AppState> for AuthenticatedService {
     type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let service_name = parts
             .headers
             .get("X-Service-Name")
@@ -52,7 +51,12 @@ impl FromRequestParts<AppState> for AuthenticatedService {
 
         let expected_signature = hex::encode(mac.finalize().into_bytes());
 
-        if signature_hex.as_bytes().ct_eq(expected_signature.as_bytes()).unwrap_u8() != 1 {
+        if signature_hex
+            .as_bytes()
+            .ct_eq(expected_signature.as_bytes())
+            .unwrap_u8()
+            != 1
+        {
             return Err(AppError::Unauthorized);
         }
 

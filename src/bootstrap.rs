@@ -7,7 +7,7 @@ use crate::{
     domain::{
         crypto::KmsCryptoService,
         keys::{
-            models::{KeyAlgorithm, KeyPurpose, ServiceId},
+            models::{KeyAlgorithm, KeyPairEntity, KeyPurpose},
             repository::KeyRepository,
         },
     },
@@ -26,11 +26,11 @@ where
 
     for service_cfg in acl_settings.services.values() {
         for rule in &service_cfg.allowed_access {
-            let target_service = &rule.target_service;
+            let target_service = rule.target_service.clone();
             let algorithm = rule.algorithm;
 
             // Sprawdzamy, czy aktywny klucz już istnieje w MongoDB
-            let existing_key = key_repo.get_active_key(target_service, algorithm).await?;
+            let existing_key = key_repo.get_active_key(&target_service, algorithm).await?;
 
             if existing_key.is_none() {
                 warn!(
@@ -39,27 +39,37 @@ where
                     "Brak aktywnego klucza w MongoDB. Generowanie nowego klucza..."
                 );
 
-                // 1. Generowanie nowej pary kluczy / klucza symetrycznego
-                let generated_key = crypto_service.generate_key_pair(algorithm)?;
+                // 1. Generowanie pary kluczy i wyznaczenie przeznaczenia na podstawie algorytmu
+                let (generated_key, purpose) = match algorithm {
+                    KeyAlgorithm::Ed25519 => (
+                        crypto_service.generate_ed25519_keypair()?,
+                        KeyPurpose::Signing,
+                    ),
+                    KeyAlgorithm::X25519 => (
+                        crypto_service.generate_x25519_keypair()?,
+                        KeyPurpose::Encryption,
+                    ),
+                };
 
-                // 2. Szyfrowanie klucza prywatnego Master Keyem z KMS (np. AES-256-GCM z ENV)
+                // 2. Szyfrowanie klucza prywatnego Master Keyem
                 let encrypted_private_key =
                     crypto_service.encrypt_private_key(&generated_key.private_key_bytes)?;
 
-                // 3. Utworzenie nowej encji domenowej
-                let new_key = crate::domain::keys::models::KeyEntity {
+                // 3. Utworzenie encji domenowej KeyPairEntity
+                let new_key = KeyPairEntity {
                     id: uuid::Uuid::new_v4(),
                     service_id: target_service.clone(),
                     algorithm,
-                    purpose: KeyPurpose::Signing,
-                    public_key_pem: generated_key.public_key_pem,
+                    purpose,
+                    public_key_pem: generated_key.public_key_pem.clone(), // Klonowanie zapobiega ruchowi ze struktury z `Drop`
                     encrypted_private_key,
                     version: 1,
                     is_active: true,
                     created_at: chrono::Utc::now(),
+                    expires_at: None,
                 };
 
-                // 4. Zapis w bazie MongoDB
+                // 4. Zapis w bazie danych
                 key_repo.save_key(&new_key).await?;
                 info!(
                     service = %target_service.0,

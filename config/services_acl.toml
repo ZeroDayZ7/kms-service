@@ -1,6 +1,6 @@
 # config/services_acl.toml
 
-[services.auth-service]
+[acl.services.auth-service]
 service_id = "auth-service"
 secret = "super-long-random-secret-for-auth-service-hmac-64-bytes"
 allowed_access = [
@@ -9,7 +9,7 @@ allowed_access = [
     { target_service = "shared-jwt", algorithm = "Ed25519", access_level = "PrivateKey" }
 ]
 
-[services.gateway-service]
+[acl.services.gateway-service]
 service_id = "gateway-service"
 secret = "super-long-random-secret-for-gateway-service-hmac-64-bytes"
 allowed_access = [

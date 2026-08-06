@@ -1,7 +1,7 @@
 // src/domain/audit/models.rs
+use crate::domain::keys::models::{KeyAlgorithm, ServiceId};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::domain::keys::models::{KeyAlgorithm, ServiceId};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AuditAction {

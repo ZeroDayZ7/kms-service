@@ -1,7 +1,7 @@
 // src/config/acl.rs
+use crate::domain::keys::models::{KeyAlgorithm, ServiceId};
 use serde::Deserialize;
 use std::collections::HashMap;
-use crate::domain::keys::models::{KeyAlgorithm, ServiceId};
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub enum KeyAccessLevel {

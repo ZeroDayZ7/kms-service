@@ -5,10 +5,13 @@ use crate::application::use_cases::{
 use crate::config::Settings;
 use crate::errors::AppResult;
 use crate::infrastructure::crypto::kms_service::KmsCryptoService;
+use crate::infrastructure::mongodb::audit::MongoAuditRepository;
 use crate::infrastructure::redis::client::RedisManager;
 use crate::infrastructure::redis::rate_limiter::RedisRateLimiter;
 use crate::infrastructure::serialization::JsonDecoder;
-use crate::infrastructure::{init_mongo, MongoKeyRepository, MongoUserRepository, MongoVaultRepository};
+use crate::infrastructure::{
+    MongoKeyRepository, MongoUserRepository, MongoVaultRepository, init_mongo,
+};
 use crate::services::user_service::UserService;
 
 use mongodb::Database;
@@ -18,7 +21,8 @@ pub type ConcreteUnlockSecretUseCase =
     UnlockSecretUseCase<MongoVaultRepository, KmsCryptoService, JsonDecoder>;
 pub type ConcreteGenerateKeyPairUseCase = GenerateKeyPairUseCase<MongoKeyRepository>;
 pub type ConcreteGetPublicKeyUseCase = GetPublicKeyUseCase<MongoKeyRepository>;
-pub type ConcreteGetPrivateKeyUseCase = GetPrivateKeyUseCase<MongoKeyRepository, KmsCryptoService>;
+pub type ConcreteGetPrivateKeyUseCase =
+    GetPrivateKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
 pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository>;
 
 pub struct UseCases {
@@ -50,6 +54,7 @@ impl AppState {
         let vault_repo = Arc::new(MongoVaultRepository::new(Arc::clone(&db_pool)));
         let user_repo = Arc::new(MongoUserRepository::new(Arc::clone(&db_pool)));
         let key_repo = Arc::new(MongoKeyRepository::new(Arc::clone(&db_pool)));
+        let audit_repo = Arc::new(MongoAuditRepository::new(&mongo_db));
 
         key_repo.ensure_indexes().await?;
 
@@ -67,10 +72,14 @@ impl AppState {
             crypto_service.clone(),
         ));
         let get_public_key_use_case = Arc::new(GetPublicKeyUseCase::new(key_repo.clone()));
+
         let get_private_key_use_case = Arc::new(GetPrivateKeyUseCase::new(
             key_repo.clone(),
+            audit_repo.clone(),
             crypto_service.clone(),
+            Arc::new(settings.acl.clone()),
         ));
+
         let rotate_key_use_case = Arc::new(RotateKeyUseCase::new(
             key_repo.clone(),
             crypto_service.clone(),
