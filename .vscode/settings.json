@@ -18,7 +18,8 @@
     "**/.vscode": true,
     "**/tests": true,
     "LICENSE": true,
-    "logs": true,
+    "**/docs": true,
+    "**/docker-entrypoint-initdb.d": true,
     ".env.example": true,
     "README.md": true,
     "**/combined.txt": true
