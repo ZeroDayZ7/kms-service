@@ -1,18 +1,20 @@
-// src/domain/crypto.rs
 use crate::errors::AppResult;
 use serde::{Deserialize, Serialize};
 use zeroize::ZeroizeOnDrop;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum KeyAlgorithm {
     Ed25519,
     X25519,
+    AES256GCM,
+    HmacSha256,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum KeyPurpose {
     Signing,
     Encryption,
+    Authentication,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,6 +32,7 @@ pub struct RawKeyPair {
 pub trait KmsCryptoService: Send + Sync {
     fn generate_ed25519_keypair(&self) -> AppResult<RawKeyPair>;
     fn generate_x25519_keypair(&self) -> AppResult<RawKeyPair>;
+    fn generate_symmetric_key(&self) -> AppResult<RawKeyPair>;
     fn encrypt_private_key(&self, private_key: &[u8]) -> AppResult<EncryptedPrivateKey>;
     fn decrypt_private_key(&self, encrypted: &EncryptedPrivateKey) -> AppResult<Vec<u8>>;
 }

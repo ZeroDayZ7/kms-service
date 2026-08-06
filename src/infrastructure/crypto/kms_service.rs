@@ -67,6 +67,19 @@ impl KmsCryptoServiceTrait for KmsCryptoService {
         })
     }
 
+    fn generate_symmetric_key(&self) -> AppResult<RawKeyPair> {
+        let mut key_bytes = [0u8; 32];
+        let mut rng = OsRng;
+
+        rng.try_fill_bytes(&mut key_bytes)
+            .map_err(|e| AppError::CryptoError(format!("RNG error: {e}")))?;
+
+        Ok(RawKeyPair {
+            public_key_pem: String::new(),
+            private_key_bytes: key_bytes.to_vec(),
+        })
+    }
+
     fn encrypt_private_key(&self, private_key: &[u8]) -> AppResult<EncryptedPrivateKey> {
         let mut nonce_bytes = [0u8; NONCE_LEN];
         let mut rng = OsRng;
@@ -120,7 +133,6 @@ mod tests {
     use crate::config::crypto::{CryptoSettings, KeyTtlDays, MasterKeyB64};
 
     fn setup_crypto_service() -> KmsCryptoService {
-        // Poprawny 32-bajtowy klucz zakodowany w Base64 (32 bajty '0'..'f')
         let dummy_master_key_b64 = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
         let settings = CryptoSettings {
             master_key_b64: MasterKeyB64(dummy_master_key_b64.to_string()),
@@ -147,6 +159,15 @@ mod tests {
         assert!(!keypair.public_key_pem.is_empty());
         assert!(keypair.public_key_pem.contains("BEGIN X25519 PUBLIC KEY"));
         assert_eq!(keypair.private_key_bytes.len(), 32);
+    }
+
+    #[test]
+    fn test_generate_symmetric_key_success() {
+        let kms = setup_crypto_service();
+        let key = kms.generate_symmetric_key().unwrap();
+
+        assert!(key.public_key_pem.is_empty());
+        assert_eq!(key.private_key_bytes.len(), 32);
     }
 
     #[test]

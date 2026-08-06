@@ -1,4 +1,3 @@
-// src/infrastructure/mongodb/keys.rs
 use std::sync::Arc;
 
 use mongodb::{
@@ -146,6 +145,8 @@ fn map_doc_to_entity(doc: MongoKeyPairDocument) -> AppResult<KeyPairEntity> {
     let algorithm = match doc.algorithm.as_str() {
         "Ed25519" => KeyAlgorithm::Ed25519,
         "X25519" => KeyAlgorithm::X25519,
+        "AES256GCM" => KeyAlgorithm::AES256GCM,
+        "HmacSha256" => KeyAlgorithm::HmacSha256,
         other => {
             return Err(AppError::Internal(format!(
                 "Unknown algorithm in database: {}",
@@ -157,6 +158,7 @@ fn map_doc_to_entity(doc: MongoKeyPairDocument) -> AppResult<KeyPairEntity> {
     let purpose = match doc.purpose.as_str() {
         "Signing" => KeyPurpose::Signing,
         "Encryption" => KeyPurpose::Encryption,
+        "Authentication" => KeyPurpose::Authentication,
         other => {
             return Err(AppError::Internal(format!(
                 "Unknown purpose in database: {}",

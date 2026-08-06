@@ -21,8 +21,7 @@ pub enum AuditStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditLog {
-    #[serde(with = "bson::serde_helpers::uuid_1_as_binary")] 
-
+    #[serde(with = "bson::serde_helpers::uuid_1_as_binary")]
     pub id: uuid::Uuid,
     pub caller_service: ServiceId,
     pub target_service: ServiceId,
@@ -30,7 +29,7 @@ pub struct AuditLog {
     pub algorithm: KeyAlgorithm,
     pub status: AuditStatus,
     pub reason: Option<String>,
-    
+
     #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
     pub timestamp: DateTime<Utc>,
 }

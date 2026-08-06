@@ -1,12 +1,15 @@
-// src/config/acl.rs
+// region: Imports
 use crate::domain::keys::models::{KeyAlgorithm, ServiceId};
 use serde::Deserialize;
 use std::collections::HashMap;
+// endregion
 
+// region: Enums & Models
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub enum KeyAccessLevel {
     PrivateKey,
     PublicKey,
+    #[serde(alias = "SecretKey")]
     SymmetricKey,
 }
 
@@ -28,7 +31,9 @@ pub struct ServiceConfig {
 pub struct AclSettings {
     pub services: HashMap<String, ServiceConfig>,
 }
+// endregion
 
+// region: Implementation
 impl AclSettings {
     pub fn is_allowed(
         &self,
@@ -48,3 +53,4 @@ impl AclSettings {
         })
     }
 }
+// endregion

@@ -1,4 +1,3 @@
-// src/bootstrap.rs
 use std::sync::Arc;
 use tracing::{info, warn};
 
@@ -39,7 +38,7 @@ where
                     "Brak aktywnego klucza w MongoDB. Generowanie nowego klucza..."
                 );
 
-                // 1. Generowanie pary kluczy i wyznaczenie przeznaczenia na podstawie algorytmu
+                // 1. Generowanie pary kluczy / klucza symetrycznego i określenie celu
                 let (generated_key, purpose) = match algorithm {
                     KeyAlgorithm::Ed25519 => (
                         crypto_service.generate_ed25519_keypair()?,
@@ -49,9 +48,17 @@ where
                         crypto_service.generate_x25519_keypair()?,
                         KeyPurpose::Encryption,
                     ),
+                    KeyAlgorithm::AES256GCM => (
+                        crypto_service.generate_symmetric_key()?,
+                        KeyPurpose::Encryption,
+                    ),
+                    KeyAlgorithm::HmacSha256 => (
+                        crypto_service.generate_symmetric_key()?,
+                        KeyPurpose::Authentication,
+                    ),
                 };
 
-                // 2. Szyfrowanie klucza prywatnego Master Keyem
+                // 2. Szyfrowanie klucza prywatnego/tajnego Master Keyem
                 let encrypted_private_key =
                     crypto_service.encrypt_private_key(&generated_key.private_key_bytes)?;
 
@@ -61,7 +68,7 @@ where
                     service_id: target_service.clone(),
                     algorithm,
                     purpose,
-                    public_key_pem: generated_key.public_key_pem.clone(), // Klonowanie zapobiega ruchowi ze struktury z `Drop`
+                    public_key_pem: generated_key.public_key_pem.clone(),
                     encrypted_private_key,
                     version: 1,
                     is_active: true,
