@@ -1,4 +1,3 @@
-// src/handlers/keys.rs
 use axum::{
     Json,
     extract::{Path, State},
@@ -7,11 +6,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     application::use_cases::{
-        GenerateKeyPairInput, GetPrivateKeyInput, GetPublicKeyInput, RotateKeyInput,
+        GenerateKeyPairInput, GetPrivateKeyInput, GetPublicKeyInput, GetSymmetricKeyInput,
+        RotateKeyInput,
     },
     domain::keys::models::{KeyAlgorithm, KeyPurpose, ServiceId},
     errors::AppResult,
-    server::state::AppState,
+    server::{extractors::authenticated_service::AuthenticatedService, state::AppState},
 };
 
 #[derive(Debug, Deserialize)]
@@ -55,6 +55,7 @@ pub struct PrivateKeyResponse {
 
 pub async fn generate_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(_caller): AuthenticatedService,
     Json(payload): Json<GenerateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = GenerateKeyPairInput {
@@ -79,6 +80,7 @@ pub async fn generate_key_handler(
 
 pub async fn get_public_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(_caller): AuthenticatedService,
     Path((service_id, algorithm)): Path<(String, KeyAlgorithm)>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = GetPublicKeyInput {
@@ -102,6 +104,7 @@ pub async fn get_public_key_handler(
 
 pub async fn rotate_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(_caller): AuthenticatedService,
     Json(payload): Json<RotateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = RotateKeyInput {
@@ -125,10 +128,12 @@ pub async fn rotate_key_handler(
 
 pub async fn get_private_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(caller_service): AuthenticatedService,
     Json(payload): Json<GetPrivateKeyRequest>,
 ) -> AppResult<Json<PrivateKeyResponse>> {
     let input = GetPrivateKeyInput {
-        service_id: ServiceId(payload.service_id),
+        caller_service,
+        target_service: ServiceId(payload.service_id),
         algorithm: payload.algorithm,
     };
 
@@ -139,5 +144,44 @@ pub async fn get_private_key_handler(
         algorithm: output.algorithm,
         version: output.version,
         private_key_bytes: output.private_key_bytes,
+    }))
+}
+
+// ============================================================================
+// STRUCTS & HANDLER FOR SYMMETRIC KEYS
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+pub struct GetSymmetricKeyRequest {
+    pub service_id: String,
+    pub algorithm: KeyAlgorithm,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SymmetricKeyResponse {
+    pub service_id: String,
+    pub algorithm: KeyAlgorithm,
+    pub version: u32,
+    pub key_bytes: Vec<u8>,
+}
+
+pub async fn get_symmetric_key_handler(
+    State(state): State<AppState>,
+    AuthenticatedService(caller_service): AuthenticatedService,
+    Json(payload): Json<GetSymmetricKeyRequest>,
+) -> AppResult<Json<SymmetricKeyResponse>> {
+    let input = GetSymmetricKeyInput {
+        caller_service,
+        target_service: ServiceId(payload.service_id),
+        algorithm: payload.algorithm,
+    };
+
+    let output = state.use_cases.get_symmetric_key.execute(input).await?;
+
+    Ok(Json(SymmetricKeyResponse {
+        service_id: output.service_id.0,
+        algorithm: output.algorithm,
+        version: output.version,
+        key_bytes: output.key_bytes,
     }))
 }

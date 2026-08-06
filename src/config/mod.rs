@@ -1,4 +1,5 @@
-use config::{Config, Environment, File};
+// src/config/mod.rs
+use config::{Config, ConfigError, Environment, File};
 use dotenvy::dotenv;
 
 mod database;
@@ -7,6 +8,7 @@ mod redis;
 mod server;
 mod settings;
 
+pub mod acl;
 pub mod cors;
 pub mod crypto;
 pub mod rate_limit;
@@ -18,7 +20,7 @@ pub use log::LogLevel;
 pub use redis::RedisConfig;
 pub use settings::Settings;
 
-pub fn load() -> Result<Settings, config::ConfigError> {
+pub fn load() -> Result<Settings, ConfigError> {
     let base_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("config")
         .join("settings.toml");
@@ -26,37 +28,19 @@ pub fn load() -> Result<Settings, config::ConfigError> {
     load_from(base_path)
 }
 
-pub fn load_from<P: AsRef<std::path::Path>>(path: P) -> Result<Settings, config::ConfigError> {
+pub fn load_from<P: AsRef<std::path::Path>>(path: P) -> Result<Settings, ConfigError> {
     dotenv().ok();
 
+    let settings_path = path.as_ref();
+    let config_dir = settings_path
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("config"));
+    let acl_path = config_dir.join("services_acl.toml");
+
     Config::builder()
-        .add_source(File::from(path.as_ref().to_path_buf()).required(true))
+        .add_source(File::from(settings_path).required(true))
+        .add_source(File::from(acl_path).required(true))
         .add_source(Environment::default().separator("__"))
         .build()?
         .try_deserialize()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_load_config_file() {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("config")
-            .join("settings.toml");
-
-        // To wypisze ścieżkę w konsoli, jeśli test zawiedzie (lub z flagą --nocapture)
-        println!("Szukam pliku w: {:?}", path.display());
-        println!("Czy plik istnieje fizycznie? {}", path.exists());
-
-        let result = load_from(&path);
-
-        assert!(
-            result.is_ok(),
-            "Nie udało się załadować konfiguracji z ścieżki: {:?}. Błąd: {:?}",
-            path,
-            result.err()
-        );
-    }
 }

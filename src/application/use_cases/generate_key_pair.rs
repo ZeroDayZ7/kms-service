@@ -53,6 +53,9 @@ where
         let generated_pair = match input.algorithm {
             KeyAlgorithm::Ed25519 => self.crypto_service.generate_ed25519_keypair()?,
             KeyAlgorithm::X25519 => self.crypto_service.generate_x25519_keypair()?,
+            KeyAlgorithm::AES256GCM | KeyAlgorithm::HmacSha256 => {
+                self.crypto_service.generate_symmetric_key()?
+            }
         };
 
         let public_key_pem = generated_pair.public_key_pem.clone();
@@ -62,7 +65,7 @@ where
             .encrypt_private_key(&generated_pair.private_key_bytes)?;
 
         let entity = KeyPairEntity {
-            id: uuid::Uuid::new_v4(),
+            id: uuid::Uuid::now_v7(),
             service_id: input.service_id,
             algorithm: input.algorithm,
             purpose: input.purpose,

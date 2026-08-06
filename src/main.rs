@@ -1,4 +1,5 @@
-// Main entry point for the HTTP server application.
+// src/main.rs
+use kms_service::bootstrap::bootstrap_keys;
 use kms_service::config;
 use kms_service::server::{self, state::AppState};
 
@@ -10,7 +11,6 @@ use tracing::{error, info};
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
-        // Użyj {:#}, aby rozwinąć cały łańcuch błędów (wyświetla `caused by: ...`)
         eprintln!("❌ KRYTYCZNY BŁĄD: {:#}", e);
         error!(error = ?e, "❌ Fatal application error");
         std::process::exit(1);
@@ -27,7 +27,7 @@ async fn run() -> anyhow::Result<()> {
     // -------------------------
     // 2. LOGGING
     // -------------------------
-    server::logger::init_logging(&settings.log.level);
+    server::logger::init_logging(settings.log.level);
 
     info!("⚙️ Configuration loaded");
 
@@ -41,21 +41,32 @@ async fn run() -> anyhow::Result<()> {
     info!("🧠 Application state initialized");
 
     // -------------------------
-    // 4. ADDRESS
+    // 4. BOOTSTRAP KEYS (Inicjalizacja kluczy na podstawie ACL)
+    // -------------------------
+    bootstrap_keys(
+        &settings.acl, // <-- POPRAWIONO: przekazujemy referencję do settings.acl
+        state.key_repo.clone(),
+        state.crypto_service.clone(),
+    )
+    .await
+    .context("Krytyczny błąd bootstrapu kluczy KMS")?;
+
+    // -------------------------
+    // 5. ADDRESS
     // -------------------------
     let addr: SocketAddr = format!("{}:{}", settings.server.host, settings.server.port)
         .parse()
         .context("Invalid server address")?;
 
     // -------------------------
-    // 5. ROUTER
+    // 6. ROUTER
     // -------------------------
     let app = server::router(state);
 
     info!("🚀 Server starting on {}", addr);
 
     // -------------------------
-    // 6. SERVER LIFECYCLE
+    // 7. SERVER LIFECYCLE
     // -------------------------
     server::http::serve(app, addr, settings.server.shutdown_timeout)
         .await

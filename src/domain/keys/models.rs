@@ -1,10 +1,11 @@
+// src/domain/keys/models.rs
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use uuid::Uuid;
 use zeroize::ZeroizeOnDrop;
 
-pub use crate::domain::crypto::EncryptedPrivateKey;
+pub use crate::domain::crypto::{EncryptedPrivateKey, KeyAlgorithm, KeyPurpose};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ServiceId(pub String);
@@ -19,18 +20,6 @@ impl From<&str> for ServiceId {
     fn from(s: &str) -> Self {
         Self(s.to_string())
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum KeyAlgorithm {
-    Ed25519,
-    X25519,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum KeyPurpose {
-    Signing,
-    Encryption,
 }
 
 #[derive(ZeroizeOnDrop)]

@@ -1,3 +1,4 @@
+use super::acl::AclSettings;
 use super::cors::CorsConfig;
 use super::database::DatabaseConfig;
 use super::log::LogConfig;
@@ -16,4 +17,5 @@ pub struct Settings {
     pub database: DatabaseConfig,
     pub rate_limit: RateLimitConfig,
     pub crypto: CryptoSettings,
+    pub acl: AclSettings,
 }
