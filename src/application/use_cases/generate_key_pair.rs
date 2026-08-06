@@ -62,7 +62,7 @@ where
             .encrypt_private_key(&generated_pair.private_key_bytes)?;
 
         let entity = KeyPairEntity {
-            id: uuid::Uuid::new_v4(),
+            id: uuid::Uuid::now_v7(),
             service_id: input.service_id,
             algorithm: input.algorithm,
             purpose: input.purpose,

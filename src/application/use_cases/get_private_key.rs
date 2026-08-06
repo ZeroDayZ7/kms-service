@@ -94,7 +94,7 @@ where
             None => {
                 self.audit_repo
                     .record(AuditLog {
-                        id: Uuid::new_v4(),
+                        id: Uuid::now_v7(),
                         caller_service: input.caller_service.clone(),
                         target_service: input.target_service.clone(),
                         action: AuditAction::GetPrivateKey,
@@ -117,7 +117,7 @@ where
         // 4. Rejestracja udanego odczytu w audycie
         self.audit_repo
             .record(AuditLog {
-                id: Uuid::new_v4(),
+                id: Uuid::now_v7(),
                 caller_service: input.caller_service,
                 target_service: input.target_service,
                 action: AuditAction::GetPrivateKey,

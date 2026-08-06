@@ -57,7 +57,7 @@ where
 
                 // 3. Utworzenie encji domenowej KeyPairEntity
                 let new_key = KeyPairEntity {
-                    id: uuid::Uuid::new_v4(),
+                    id: uuid::Uuid::now_v7(),
                     service_id: target_service.clone(),
                     algorithm,
                     purpose,
