@@ -10,7 +10,7 @@ allowed_access = [
 
     { target_service = "docs-passport", algorithm = "AES256GCM", access_level = "SecretKey" },
 
-    { target_service = "internal-communication-hmac", algorithm = "AES256GCM", access_level = "SecretKey" }
+    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
 
 [acl.services.gateway-service]
@@ -20,7 +20,7 @@ allowed_access = [
     { target_service = "auth-service", algorithm = "Ed25519", access_level = "PublicKey" },
     { target_service = "shared-jwt", algorithm = "Ed25519", access_level = "PublicKey" },
 
-    { target_service = "internal-communication-hmac", algorithm = "AES256GCM", access_level = "SecretKey" }
+    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
 
 [acl.services.citizen-docs-service]
@@ -32,5 +32,5 @@ allowed_access = [
     { target_service = "docs-driver-license", algorithm = "AES256GCM", access_level = "SecretKey" },
     { target_service = "docs-passport", algorithm = "AES256GCM", access_level = "SecretKey" },
 
-    { target_service = "docs-passport", algorithm = "AES256GCM", access_level = "SecretKey" }
+    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]

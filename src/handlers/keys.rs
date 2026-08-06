@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     application::use_cases::{
-        GenerateKeyPairInput, GetPrivateKeyInput, GetPublicKeyInput, RotateKeyInput,
+        GenerateKeyPairInput, GetPrivateKeyInput, GetPublicKeyInput, GetSymmetricKeyInput,
+        RotateKeyInput,
     },
     domain::keys::models::{KeyAlgorithm, KeyPurpose, ServiceId},
     errors::AppResult,
@@ -143,5 +144,44 @@ pub async fn get_private_key_handler(
         algorithm: output.algorithm,
         version: output.version,
         private_key_bytes: output.private_key_bytes,
+    }))
+}
+
+// ============================================================================
+// STRUCTS & HANDLER FOR SYMMETRIC KEYS
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+pub struct GetSymmetricKeyRequest {
+    pub service_id: String,
+    pub algorithm: KeyAlgorithm,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SymmetricKeyResponse {
+    pub service_id: String,
+    pub algorithm: KeyAlgorithm,
+    pub version: u32,
+    pub key_bytes: Vec<u8>,
+}
+
+pub async fn get_symmetric_key_handler(
+    State(state): State<AppState>,
+    AuthenticatedService(caller_service): AuthenticatedService,
+    Json(payload): Json<GetSymmetricKeyRequest>,
+) -> AppResult<Json<SymmetricKeyResponse>> {
+    let input = GetSymmetricKeyInput {
+        caller_service,
+        target_service: ServiceId(payload.service_id),
+        algorithm: payload.algorithm,
+    };
+
+    let output = state.use_cases.get_symmetric_key.execute(input).await?;
+
+    Ok(Json(SymmetricKeyResponse {
+        service_id: output.service_id.0,
+        algorithm: output.algorithm,
+        version: output.version,
+        key_bytes: output.key_bytes,
     }))
 }

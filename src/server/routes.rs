@@ -49,6 +49,10 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/keys/private",
             post(keys::get_private_key_handler).layer(rate_limits.auth.clone()),
         )
+        .route(
+            "/api/v1/keys/symmetric",
+            post(keys::get_symmetric_key_handler).layer(rate_limits.auth.clone()),
+        )
         // Middleware globalne
         .route_layer(rate_limits.global.clone())
         .layer(redis_mw)

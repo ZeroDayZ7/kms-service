@@ -1,6 +1,6 @@
 use crate::application::use_cases::{
-    GenerateKeyPairUseCase, GetPrivateKeyUseCase, GetPublicKeyUseCase, RotateKeyUseCase,
-    UnlockSecretUseCase,
+    GenerateKeyPairUseCase, GetPrivateKeyUseCase, GetPublicKeyUseCase, GetSymmetricKeyUseCase,
+    RotateKeyUseCase, UnlockSecretUseCase,
 };
 use crate::config::Settings;
 use crate::errors::AppResult;
@@ -23,6 +23,8 @@ pub type ConcreteGenerateKeyPairUseCase = GenerateKeyPairUseCase<MongoKeyReposit
 pub type ConcreteGetPublicKeyUseCase = GetPublicKeyUseCase<MongoKeyRepository>;
 pub type ConcreteGetPrivateKeyUseCase =
     GetPrivateKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
+pub type ConcreteGetSymmetricKeyUseCase =
+    GetSymmetricKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
 pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository>;
 
 pub struct UseCases {
@@ -30,6 +32,7 @@ pub struct UseCases {
     pub generate_key_pair: Arc<ConcreteGenerateKeyPairUseCase>,
     pub get_public_key: Arc<ConcreteGetPublicKeyUseCase>,
     pub get_private_key: Arc<ConcreteGetPrivateKeyUseCase>,
+    pub get_symmetric_key: Arc<ConcreteGetSymmetricKeyUseCase>,
     pub rotate_key: Arc<ConcreteRotateKeyUseCase>,
 }
 
@@ -80,6 +83,12 @@ impl AppState {
             Arc::new(settings.acl.clone()),
         ));
 
+        let get_symmetric_key_use_case = Arc::new(GetSymmetricKeyUseCase::new(
+            key_repo.clone(),
+            audit_repo.clone(),
+            Arc::new(settings.acl.clone()),
+        ));
+
         let rotate_key_use_case = Arc::new(RotateKeyUseCase::new(
             key_repo.clone(),
             crypto_service.clone(),
@@ -94,6 +103,7 @@ impl AppState {
                 generate_key_pair: generate_key_pair_use_case,
                 get_public_key: get_public_key_use_case,
                 get_private_key: get_private_key_use_case,
+                get_symmetric_key: get_symmetric_key_use_case,
                 rotate_key: rotate_key_use_case,
             }),
             redis_rate_limiter: Arc::new(RedisRateLimiter::new(Arc::clone(&redis_manager)).await),
