@@ -11,7 +11,7 @@ use crate::{
     },
     domain::keys::models::{KeyAlgorithm, KeyPurpose, ServiceId},
     errors::AppResult,
-    server::state::AppState,
+    server::{extractors::authenticated_service::AuthenticatedService, state::AppState},
 };
 
 #[derive(Debug, Deserialize)]
@@ -55,6 +55,7 @@ pub struct PrivateKeyResponse {
 
 pub async fn generate_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(_caller): AuthenticatedService,
     Json(payload): Json<GenerateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = GenerateKeyPairInput {
@@ -79,6 +80,7 @@ pub async fn generate_key_handler(
 
 pub async fn get_public_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(_caller): AuthenticatedService,
     Path((service_id, algorithm)): Path<(String, KeyAlgorithm)>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = GetPublicKeyInput {
@@ -102,6 +104,7 @@ pub async fn get_public_key_handler(
 
 pub async fn rotate_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(_caller): AuthenticatedService,
     Json(payload): Json<RotateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = RotateKeyInput {
@@ -125,10 +128,12 @@ pub async fn rotate_key_handler(
 
 pub async fn get_private_key_handler(
     State(state): State<AppState>,
+    AuthenticatedService(caller_service): AuthenticatedService,
     Json(payload): Json<GetPrivateKeyRequest>,
 ) -> AppResult<Json<PrivateKeyResponse>> {
     let input = GetPrivateKeyInput {
-        service_id: ServiceId(payload.service_id),
+        caller_service,
+        target_service: ServiceId(payload.service_id),
         algorithm: payload.algorithm,
     };
 

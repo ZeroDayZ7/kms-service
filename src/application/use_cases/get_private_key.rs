@@ -1,7 +1,15 @@
+// src/application/use_cases/get_private_key.rs
 use std::sync::Arc;
+use chrono::Utc;
+use uuid::Uuid;
 
 use crate::{
+    config::acl::{AclSettings, KeyAccessLevel},
     domain::{
+        audit::{
+            models::{AuditAction, AuditLog, AuditStatus},
+            repository::AuditRepository,
+        },
         crypto::KmsCryptoService,
         keys::{
             models::{KeyAlgorithm, ServiceId},
@@ -12,7 +20,8 @@ use crate::{
 };
 
 pub struct GetPrivateKeyInput {
-    pub service_id: ServiceId,
+    pub caller_service: ServiceId,
+    pub target_service: ServiceId,
     pub algorithm: KeyAlgorithm,
 }
 
@@ -23,37 +32,101 @@ pub struct GetPrivateKeyOutput {
     pub private_key_bytes: Vec<u8>,
 }
 
-pub struct GetPrivateKeyUseCase<R> {
+pub struct GetPrivateKeyUseCase<R, A> {
     key_repo: Arc<R>,
+    audit_repo: Arc<A>,
     crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
+    acl_settings: Arc<AclSettings>,
 }
 
-impl<R> GetPrivateKeyUseCase<R>
+impl<R, A> GetPrivateKeyUseCase<R, A>
 where
     R: KeyRepository,
+    A: AuditRepository,
 {
-    pub fn new(key_repo: Arc<R>, crypto_service: Arc<dyn KmsCryptoService + Send + Sync>) -> Self {
+    pub fn new(
+        key_repo: Arc<R>,
+        audit_repo: Arc<A>,
+        crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
+        acl_settings: Arc<AclSettings>,
+    ) -> Self {
         Self {
             key_repo,
+            audit_repo,
             crypto_service,
+            acl_settings,
         }
     }
 
     pub async fn execute(&self, input: GetPrivateKeyInput) -> AppResult<GetPrivateKeyOutput> {
-        let active_key = self
-            .key_repo
-            .get_active_key(&input.service_id, input.algorithm)
-            .await?
-            .ok_or_else(|| {
-                AppError::NotFound(format!(
-                    "No active key found for service {} and algorithm {:?}",
-                    input.service_id.0, input.algorithm
-                ))
-            })?;
+        let is_allowed = self.acl_settings.is_allowed(
+            &input.caller_service,
+            &input.target_service,
+            input.algorithm,
+            &KeyAccessLevel::PrivateKey,
+        );
 
+        // 1. Weryfikacja ACL i logowanie próby nieautoryzowanego dostępu
+        if !is_allowed {
+            self.audit_repo
+                .record(AuditLog {
+                    id: Uuid::new_v4(),
+                    caller_service: input.caller_service.clone(),
+                    target_service: input.target_service.clone(),
+                    action: AuditAction::GetPrivateKey,
+                    algorithm: input.algorithm,
+                    status: AuditStatus::AccessDenied,
+                    reason: Some("ACL Policy Violation".to_string()),
+                    timestamp: Utc::now(),
+                })
+                .await?;
+
+            return Err(AppError::Unauthorized);
+        }
+
+        // 2. Pobranie klucza z MongoDB
+        let active_key = match self
+            .key_repo
+            .get_active_key(&input.target_service, input.algorithm)
+            .await?
+        {
+            Some(key) => key,
+            None => {
+                self.audit_repo
+                    .record(AuditLog {
+                        id: Uuid::new_v4(),
+                        caller_service: input.caller_service.clone(),
+                        target_service: input.target_service.clone(),
+                        action: AuditAction::GetPrivateKey,
+                        algorithm: input.algorithm,
+                        status: AuditStatus::NotFound,
+                        reason: Some("Key does not exist".to_string()),
+                        timestamp: Utc::now(),
+                    })
+                    .await?;
+
+                return Err(AppError::NotFound("Key not found".into()));
+            }
+        };
+
+        // 3. Odszyfrowanie klucza prywatnego Master Keyem
         let decrypted_private_key = self
             .crypto_service
             .decrypt_private_key(&active_key.encrypted_private_key)?;
+
+        // 4. Rejestracja udanego odczytu w audycie
+        self.audit_repo
+            .record(AuditLog {
+                id: Uuid::new_v4(),
+                caller_service: input.caller_service,
+                target_service: input.target_service,
+                action: AuditAction::GetPrivateKey,
+                algorithm: input.algorithm,
+                status: AuditStatus::Success,
+                reason: None,
+                timestamp: Utc::now(),
+            })
+            .await?;
 
         Ok(GetPrivateKeyOutput {
             service_id: active_key.service_id,

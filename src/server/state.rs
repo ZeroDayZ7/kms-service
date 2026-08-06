@@ -1,4 +1,3 @@
-// src/server/state.rs
 use crate::application::use_cases::{
     GenerateKeyPairUseCase, GetPrivateKeyUseCase, GetPublicKeyUseCase, RotateKeyUseCase,
     UnlockSecretUseCase,
@@ -9,7 +8,7 @@ use crate::infrastructure::crypto::kms_service::KmsCryptoService;
 use crate::infrastructure::redis::client::RedisManager;
 use crate::infrastructure::redis::rate_limiter::RedisRateLimiter;
 use crate::infrastructure::serialization::JsonDecoder;
-use crate::infrastructure::{MongoKeyRepository, MongoUserRepository, MongoVaultRepository};
+use crate::infrastructure::{init_mongo, MongoKeyRepository, MongoUserRepository, MongoVaultRepository};
 use crate::services::user_service::UserService;
 
 use mongodb::Database;
@@ -19,7 +18,7 @@ pub type ConcreteUnlockSecretUseCase =
     UnlockSecretUseCase<MongoVaultRepository, KmsCryptoService, JsonDecoder>;
 pub type ConcreteGenerateKeyPairUseCase = GenerateKeyPairUseCase<MongoKeyRepository>;
 pub type ConcreteGetPublicKeyUseCase = GetPublicKeyUseCase<MongoKeyRepository>;
-pub type ConcreteGetPrivateKeyUseCase = GetPrivateKeyUseCase<MongoKeyRepository>;
+pub type ConcreteGetPrivateKeyUseCase = GetPrivateKeyUseCase<MongoKeyRepository, KmsCryptoService>;
 pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository>;
 
 pub struct UseCases {
@@ -38,11 +37,12 @@ pub struct AppState {
     pub db: Database,
     pub redis_manager: Arc<RedisManager>,
     pub key_repo: Arc<MongoKeyRepository>,
+    pub crypto_service: Arc<KmsCryptoService>,
 }
 
 impl AppState {
     pub async fn new(settings: Arc<Settings>) -> AppResult<Self> {
-        let mongo_db = crate::infrastructure::database::init_mongo(&settings.database).await?;
+        let mongo_db = init_mongo(&settings.database).await?;
         let redis_manager = Arc::new(RedisManager::new(&settings.redis).await?);
 
         let db_pool = Arc::new(mongo_db.clone());
@@ -91,6 +91,7 @@ impl AppState {
             db: mongo_db,
             redis_manager,
             key_repo,
+            crypto_service,
         })
     }
 }

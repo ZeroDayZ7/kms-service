@@ -7,6 +7,7 @@ mod redis;
 mod server;
 mod settings;
 
+pub mod acl;
 pub mod cors;
 pub mod crypto;
 pub mod rate_limit;
@@ -45,10 +46,6 @@ mod tests {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("config")
             .join("settings.toml");
-
-        // To wypisze ścieżkę w konsoli, jeśli test zawiedzie (lub z flagą --nocapture)
-        println!("Szukam pliku w: {:?}", path.display());
-        println!("Czy plik istnieje fizycznie? {}", path.exists());
 
         let result = load_from(&path);
 
