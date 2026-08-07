@@ -50,6 +50,7 @@ pub struct PrivateKeyResponse {
     pub service_id: String,
     pub algorithm: KeyAlgorithm,
     pub version: u32,
+    #[serde(with = "serde_bytes")] // Base64 dla Go []byte
     pub private_key_bytes: Vec<u8>,
 }
 
@@ -162,6 +163,7 @@ pub struct SymmetricKeyResponse {
     pub service_id: String,
     pub algorithm: KeyAlgorithm,
     pub version: u32,
+    #[serde(with = "serde_bytes")] // Base64 dla Go []byte
     pub key_bytes: Vec<u8>,
 }
 

@@ -13,3 +13,7 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test
 
 cargo test --all-targets --all-features
+
+key_pairs
+
+cargo run

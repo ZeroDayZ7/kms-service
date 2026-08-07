@@ -39,3 +39,13 @@ health_per_second = 50
 health_burst = 100
 auth_per_second = 50
 auth_burst = 100
+
+# ==============================================================================
+# KMS Crypto Config
+# ==============================================================================
+[crypto]
+current_master_key_version = 1
+default_key_ttl_days = 365
+
+[crypto.master_keys]
+1 = "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI="

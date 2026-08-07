@@ -6,25 +6,31 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct EncryptRequest {
+    #[serde(with = "serde_bytes")]
     pub plaintext: Vec<u8>,
 }
 
 #[derive(Serialize)]
 pub struct EncryptResponse {
+    #[serde(with = "serde_bytes")]
     pub ciphertext: Vec<u8>,
+    #[serde(with = "serde_bytes")]
     pub nonce: Vec<u8>,
     pub master_key_version: i32,
 }
 
 #[derive(Deserialize)]
 pub struct DecryptRequest {
+    #[serde(with = "serde_bytes")]
     pub ciphertext: Vec<u8>,
+    #[serde(with = "serde_bytes")]
     pub nonce: Vec<u8>,
     pub master_key_version: i32,
 }
 
 #[derive(Serialize)]
 pub struct DecryptResponse {
+    #[serde(with = "serde_bytes")]
     pub plaintext: Vec<u8>,
 }
 

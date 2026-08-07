@@ -1,3 +1,4 @@
+// src/config/crypto.rs
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
@@ -67,4 +68,16 @@ pub struct CryptoSettings {
     pub current_master_key_version: i32,
     pub master_keys: HashMap<i32, MasterKeyB64>,
     pub default_key_ttl_days: KeyTtlDays,
+}
+
+impl CryptoSettings {
+    /// Zwraca klucz główny dla aktywnej wersji
+    pub fn current_master_key(&self) -> Option<&MasterKeyB64> {
+        self.master_keys.get(&self.current_master_key_version)
+    }
+
+    /// Zwraca klucz główny dla podanej wersji
+    pub fn get_master_key(&self, version: i32) -> Option<&MasterKeyB64> {
+        self.master_keys.get(&version)
+    }
 }

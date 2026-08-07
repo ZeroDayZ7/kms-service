@@ -1,4 +1,3 @@
-// src/domain/keys/models.rs
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -12,13 +11,19 @@ pub struct ServiceId(pub String);
 
 impl fmt::Display for ServiceId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        f.write_str(&self.0)
     }
 }
 
 impl From<&str> for ServiceId {
     fn from(s: &str) -> Self {
         Self(s.to_string())
+    }
+}
+
+impl From<String> for ServiceId {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
