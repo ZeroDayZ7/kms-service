@@ -2,11 +2,7 @@
 pub mod audit;
 pub mod client;
 pub mod keys;
-pub mod user;
-pub mod vault;
 
 pub use audit::MongoAuditRepository;
 pub use client::init_mongo;
 pub use keys::MongoKeyRepository;
-pub use user::MongoUserRepository;
-pub use vault::MongoVaultRepository;

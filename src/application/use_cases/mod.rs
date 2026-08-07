@@ -1,14 +1,16 @@
 // src/application/use_cases/mod.rs
+pub mod decrypt_data;
+pub mod encrypt_data;
 pub mod generate_key_pair;
 pub mod get_private_key;
 pub mod get_public_key;
 pub mod get_symmetric_key;
 pub mod rotate_key;
-pub mod unlock_secret;
 
+pub use decrypt_data::*;
+pub use encrypt_data::*;
 pub use generate_key_pair::*;
 pub use get_private_key::*;
 pub use get_public_key::*;
 pub use get_symmetric_key::*;
 pub use rotate_key::*;
-pub use unlock_secret::*;

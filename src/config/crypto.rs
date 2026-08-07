@@ -1,6 +1,6 @@
-// src/config/crypto.rs
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
 use std::ops::Deref;
 
 // --- TYPY DEDYKOWANE (NewTypes z walidacją) ---
@@ -21,13 +21,13 @@ impl<'de> Deserialize<'de> for MasterKeyB64 {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        let decoded = BASE64.decode(&s).map_err(|_| {
-            serde::de::Error::custom("master_key_b64 must be a valid Base64 string")
-        })?;
+        let decoded = BASE64
+            .decode(&s)
+            .map_err(|_| serde::de::Error::custom("master_key must be a valid Base64 string"))?;
 
         if decoded.len() != 32 {
             return Err(serde::de::Error::custom(
-                "master_key_b64 after Base64 decoding must be exactly 32 bytes (256-bit key for AES-256-GCM)",
+                "master_key after Base64 decoding must be exactly 32 bytes (256-bit key for AES-256-GCM)",
             ));
         }
 
@@ -60,10 +60,11 @@ impl<'de> Deserialize<'de> for KeyTtlDays {
     }
 }
 
-// --- GŁÓWNA STRUKTURA KONFIGURACJI KMS ---
+// --- GŁÓWNA STRUKTURA KONFIGURACJI KMS Z WERSJONOWANIEM ---
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct CryptoSettings {
-    pub master_key_b64: MasterKeyB64,
+    pub current_master_key_version: i32,
+    pub master_keys: HashMap<i32, MasterKeyB64>,
     pub default_key_ttl_days: KeyTtlDays,
 }

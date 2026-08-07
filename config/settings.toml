@@ -39,8 +39,3 @@ health_per_second = 50
 health_burst = 100
 auth_per_second = 50
 auth_burst = 100
-
-[crypto]
-# Master Key w Base64
-master_key_b64 = "dWRGdk1pZ0lqNmIzeXo4bEF1SEpvaU5qTndqRWxYOWU="
-default_key_ttl_days = 365

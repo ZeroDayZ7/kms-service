@@ -1,24 +1,21 @@
 use crate::application::use_cases::{
-    GenerateKeyPairUseCase, GetPrivateKeyUseCase, GetPublicKeyUseCase, GetSymmetricKeyUseCase,
-    RotateKeyUseCase, UnlockSecretUseCase,
+    DecryptDataUseCase, EncryptDataUseCase, GenerateKeyPairUseCase, GetPrivateKeyUseCase,
+    GetPublicKeyUseCase, GetSymmetricKeyUseCase, RotateKeyUseCase,
 };
 use crate::config::Settings;
 use crate::errors::AppResult;
 use crate::infrastructure::crypto::kms_service::KmsCryptoService;
 use crate::infrastructure::mongodb::audit::MongoAuditRepository;
+use crate::infrastructure::mongodb::client::init_mongo;
+use crate::infrastructure::mongodb::keys::MongoKeyRepository;
 use crate::infrastructure::redis::client::RedisManager;
 use crate::infrastructure::redis::rate_limiter::RedisRateLimiter;
-use crate::infrastructure::serialization::JsonDecoder;
-use crate::infrastructure::{
-    MongoKeyRepository, MongoUserRepository, MongoVaultRepository, init_mongo,
-};
-use crate::services::user_service::UserService;
 
 use mongodb::Database;
 use std::sync::Arc;
 
-pub type ConcreteUnlockSecretUseCase =
-    UnlockSecretUseCase<MongoVaultRepository, KmsCryptoService, JsonDecoder>;
+pub type ConcreteEncryptDataUseCase = EncryptDataUseCase<KmsCryptoService>;
+pub type ConcreteDecryptDataUseCase = DecryptDataUseCase<KmsCryptoService>;
 pub type ConcreteGenerateKeyPairUseCase = GenerateKeyPairUseCase<MongoKeyRepository>;
 pub type ConcreteGetPublicKeyUseCase = GetPublicKeyUseCase<MongoKeyRepository>;
 pub type ConcreteGetPrivateKeyUseCase =
@@ -28,7 +25,8 @@ pub type ConcreteGetSymmetricKeyUseCase =
 pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository>;
 
 pub struct UseCases {
-    pub unlock_secret: Arc<ConcreteUnlockSecretUseCase>,
+    pub encrypt_data: Arc<ConcreteEncryptDataUseCase>,
+    pub decrypt_data: Arc<ConcreteDecryptDataUseCase>,
     pub generate_key_pair: Arc<ConcreteGenerateKeyPairUseCase>,
     pub get_public_key: Arc<ConcreteGetPublicKeyUseCase>,
     pub get_private_key: Arc<ConcreteGetPrivateKeyUseCase>,
@@ -54,21 +52,15 @@ impl AppState {
 
         let db_pool = Arc::new(mongo_db.clone());
 
-        let vault_repo = Arc::new(MongoVaultRepository::new(Arc::clone(&db_pool)));
-        let user_repo = Arc::new(MongoUserRepository::new(Arc::clone(&db_pool)));
         let key_repo = Arc::new(MongoKeyRepository::new(Arc::clone(&db_pool)));
         let audit_repo = Arc::new(MongoAuditRepository::new(&mongo_db));
 
         key_repo.ensure_indexes().await?;
 
         let crypto_service = Arc::new(KmsCryptoService::new(&settings.crypto)?);
-        let decoder = Arc::new(JsonDecoder);
 
-        let unlock_secret_use_case = Arc::new(UnlockSecretUseCase::new(
-            vault_repo,
-            crypto_service.clone(),
-            decoder,
-        ));
+        let encrypt_data_use_case = Arc::new(EncryptDataUseCase::new(crypto_service.clone()));
+        let decrypt_data_use_case = Arc::new(DecryptDataUseCase::new(crypto_service.clone()));
 
         let generate_key_pair_use_case = Arc::new(GenerateKeyPairUseCase::new(
             key_repo.clone(),
@@ -94,12 +86,11 @@ impl AppState {
             crypto_service.clone(),
         ));
 
-        let _user_service = Arc::new(UserService::new(user_repo));
-
         Ok(Self {
             settings,
             use_cases: Arc::new(UseCases {
-                unlock_secret: unlock_secret_use_case,
+                encrypt_data: encrypt_data_use_case,
+                decrypt_data: decrypt_data_use_case,
                 generate_key_pair: generate_key_pair_use_case,
                 get_public_key: get_public_key_use_case,
                 get_private_key: get_private_key_use_case,

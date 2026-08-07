@@ -1,5 +1,5 @@
 // src/server/routes.rs
-use crate::handlers::{auth, health, keys, vault};
+use crate::handlers::{crypto, health, keys};
 use crate::server::middleware::{self, RateLimitLayers};
 use crate::server::state::AppState;
 
@@ -20,19 +20,12 @@ pub fn router(state: AppState) -> Router {
     );
 
     Router::new()
-        // Standardowe endpointy
+        // Endpointy systemowe
         .route(
             "/health",
             get(health::health).layer(rate_limits.health.clone()),
         )
-        .route(
-            "/auth/login",
-            post(auth::login).layer(rate_limits.auth.clone()),
-        )
-        .route(
-            "/vault/unlock",
-            post(vault::unlock_secret).layer(rate_limits.auth.clone()),
-        )
+        // Endpointy zarządzania kluczami KMS
         .route(
             "/api/v1/keys/generate",
             post(keys::generate_key_handler).layer(rate_limits.auth.clone()),
@@ -52,6 +45,15 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/keys/symmetric",
             post(keys::get_symmetric_key_handler).layer(rate_limits.auth.clone()),
+        )
+        // Endpointy szyfrowania kopertowego (Envelope Encryption)
+        .route(
+            "/api/v1/encrypt",
+            post(crypto::encrypt_handler).layer(rate_limits.auth.clone()),
+        )
+        .route(
+            "/api/v1/decrypt",
+            post(crypto::decrypt_handler).layer(rate_limits.auth.clone()),
         )
         // Middleware globalne
         .route_layer(rate_limits.global.clone())

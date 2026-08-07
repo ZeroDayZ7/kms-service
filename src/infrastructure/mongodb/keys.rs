@@ -28,6 +28,7 @@ struct MongoKeyPairDocument {
     pub encrypted_private_key: Binary,
     pub nonce: Binary,
     pub version: i32,
+    pub master_key_version: i32,
     pub is_active: bool,
     pub created_at: BsonDateTime,
     pub expires_at: Option<BsonDateTime>,
@@ -78,6 +79,7 @@ impl KeyRepository for MongoKeyRepository {
                 bytes: key_pair.encrypted_private_key.nonce.clone(),
             },
             version: key_pair.version as i32,
+            master_key_version: key_pair.encrypted_private_key.master_key_version,
             is_active: key_pair.is_active,
             created_at: key_pair.created_at.into(),
             expires_at: key_pair.expires_at.map(Into::into),
@@ -179,6 +181,7 @@ fn map_doc_to_entity(doc: MongoKeyPairDocument) -> AppResult<KeyPairEntity> {
         encrypted_private_key: EncryptedPrivateKey {
             ciphertext: doc.encrypted_private_key.bytes,
             nonce: doc.nonce.bytes,
+            master_key_version: doc.master_key_version,
         },
         version: doc.version as u32,
         is_active: doc.is_active,

@@ -21,6 +21,7 @@ pub enum KeyPurpose {
 pub struct EncryptedPrivateKey {
     pub ciphertext: Vec<u8>,
     pub nonce: Vec<u8>,
+    pub master_key_version: i32,
 }
 
 #[derive(ZeroizeOnDrop)]
