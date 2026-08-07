@@ -34,3 +34,10 @@ allowed_access = [
 
     { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
+
+[acl.services.messaging-service]
+service_id = "messaging-service"
+secret = "super-long-random-secret-for-messaging-service-hmac-64-bytes"
+allowed_access = [
+    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
+]
