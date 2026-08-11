@@ -4,11 +4,13 @@
 service_id = "auth-service"
 secret = "super-long-random-secret-for-auth-service-hmac-64-bytes"
 allowed_access = [
-    { target_service = "auth-service", algorithm = "Ed25519", access_level = "PrivateKey" },
+    # { target_service = "auth-service", algorithm = "Ed25519", access_level = "PrivateKey" },
     { target_service = "auth-service", algorithm = "Ed25519", access_level = "PublicKey" },
     { target_service = "shared-jwt", algorithm = "Ed25519", access_level = "PrivateKey" },
 
-    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
+    { target_service = "hmac-gateway-auth", algorithm = "HmacSha256", access_level = "SecretKey" },
+    
+    # { target_service = "hmac-auth-internal", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
 
 [acl.services.gateway-service]
@@ -18,7 +20,9 @@ allowed_access = [
     { target_service = "auth-service", algorithm = "Ed25519", access_level = "PublicKey" },
     { target_service = "shared-jwt", algorithm = "Ed25519", access_level = "PublicKey" },
 
-    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
+    { target_service = "hmac-gateway-auth", algorithm = "HmacSha256", access_level = "SecretKey" },
+    { target_service = "hmac-gateway-docs", algorithm = "HmacSha256", access_level = "SecretKey" },
+    { target_service = "hmac-gateway-messaging", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
 
 [acl.services.citizen-docs-service]
@@ -29,12 +33,12 @@ allowed_access = [
     { target_service = "docs-driver-license", algorithm = "AES256GCM", access_level = "SecretKey" },
     { target_service = "docs-passport", algorithm = "AES256GCM", access_level = "SecretKey" },
 
-    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
+    { target_service = "hmac-gateway-docs", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
 
 [acl.services.messaging-service]
 service_id = "messaging-service"
 secret = "super-long-random-secret-for-messaging-service-hmac-64-bytes"
 allowed_access = [
-    { target_service = "internal-communication-hmac", algorithm = "HmacSha256", access_level = "SecretKey" }
+    { target_service = "hmac-gateway-messaging", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
