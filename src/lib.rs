@@ -11,5 +11,4 @@ pub mod errors;
 pub mod handlers;
 pub mod infrastructure;
 pub mod server;
-pub mod utils;
 pub mod workers;

@@ -2,6 +2,5 @@
 pub mod audit;
 pub mod crypto;
 pub mod keys;
-pub mod ports;
 pub mod rate_limiter;
 pub mod value_objects;
