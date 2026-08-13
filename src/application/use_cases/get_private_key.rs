@@ -84,7 +84,7 @@ where
             return Err(AppError::Unauthorized);
         }
 
-        // 2. Pobranie klucza z MongoDB
+        // 2. Pobranie klucza z MongoDB (TYLKO Active)
         let active_key = match self
             .key_repo
             .get_active_key(&input.target_service, input.algorithm)

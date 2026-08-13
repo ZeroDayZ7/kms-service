@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     application::use_cases::{
         GenerateKeyPairInput, GetPrivateKeyInput, GetPublicKeyInput, GetSymmetricKeyInput,
-        RotateKeyInput,
     },
     domain::keys::models::{KeyAlgorithm, KeyPurpose, ServiceId},
     errors::AppResult,
@@ -29,7 +28,7 @@ pub struct KeyPairResponse {
     pub purpose: KeyPurpose,
     pub public_key_pem: String,
     pub version: u32,
-    pub is_active: bool,
+    pub status: crate::domain::keys::models::KeyStatus,
     pub created_at: String,
 }
 
@@ -37,6 +36,8 @@ pub struct KeyPairResponse {
 pub struct RotateKeyRequest {
     pub service_id: String,
     pub algorithm: KeyAlgorithm,
+    pub reason: crate::domain::keys::models::RotationReason,
+    pub actor_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,6 +51,7 @@ pub struct PrivateKeyResponse {
     pub service_id: String,
     pub algorithm: KeyAlgorithm,
     pub version: u32,
+    #[serde(with = "serde_bytes")] // Base64 dla Go []byte
     pub private_key_bytes: Vec<u8>,
 }
 
@@ -73,7 +75,7 @@ pub async fn generate_key_handler(
         purpose: entity.purpose,
         public_key_pem: entity.public_key_pem,
         version: entity.version,
-        is_active: entity.is_active,
+        status: entity.status,
         created_at: entity.created_at.to_rfc3339(),
     }))
 }
@@ -97,19 +99,22 @@ pub async fn get_public_key_handler(
         purpose: entity.purpose,
         public_key_pem: entity.public_key_pem,
         version: entity.version,
-        is_active: entity.is_active,
+        status: entity.status,
         created_at: entity.created_at.to_rfc3339(),
     }))
 }
 
 pub async fn rotate_key_handler(
     State(state): State<AppState>,
-    AuthenticatedService(_caller): AuthenticatedService,
+    AuthenticatedService(caller_service): AuthenticatedService,
     Json(payload): Json<RotateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
-    let input = RotateKeyInput {
+    let input = crate::application::use_cases::rotate_key::RotateKeyInput {
         service_id: ServiceId(payload.service_id),
+        caller_service: caller_service,
         algorithm: payload.algorithm,
+        reason: payload.reason,
+        actor_id: payload.actor_id,
     };
 
     let entity = state.use_cases.rotate_key.execute(input).await?;
@@ -121,7 +126,7 @@ pub async fn rotate_key_handler(
         purpose: entity.purpose,
         public_key_pem: entity.public_key_pem,
         version: entity.version,
-        is_active: entity.is_active,
+        status: entity.status,
         created_at: entity.created_at.to_rfc3339(),
     }))
 }
@@ -162,6 +167,7 @@ pub struct SymmetricKeyResponse {
     pub service_id: String,
     pub algorithm: KeyAlgorithm,
     pub version: u32,
+    #[serde(with = "serde_bytes")] // Base64 dla Go []byte
     pub key_bytes: Vec<u8>,
 }
 

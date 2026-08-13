@@ -25,6 +25,14 @@ pub struct ServiceConfig {
     pub service_id: ServiceId,
     pub secret: String,
     pub allowed_access: Vec<AccessRule>,
+    pub allowed_actions: Option<Vec<ControlAction>>,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+pub enum ControlAction {
+    RotateOwnKeys,
+    RotateAllKeys,
+    RevokeKeys,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

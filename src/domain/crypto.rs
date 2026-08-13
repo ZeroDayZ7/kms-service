@@ -21,6 +21,7 @@ pub enum KeyPurpose {
 pub struct EncryptedPrivateKey {
     pub ciphertext: Vec<u8>,
     pub nonce: Vec<u8>,
+    pub master_key_version: i32,
 }
 
 #[derive(ZeroizeOnDrop)]
@@ -35,4 +36,5 @@ pub trait KmsCryptoService: Send + Sync {
     fn generate_symmetric_key(&self) -> AppResult<RawKeyPair>;
     fn encrypt_private_key(&self, private_key: &[u8]) -> AppResult<EncryptedPrivateKey>;
     fn decrypt_private_key(&self, encrypted: &EncryptedPrivateKey) -> AppResult<Vec<u8>>;
+    fn current_master_key_version(&self) -> i32;
 }

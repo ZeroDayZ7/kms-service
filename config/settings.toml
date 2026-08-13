@@ -40,7 +40,14 @@ health_burst = 100
 auth_per_second = 50
 auth_burst = 100
 
+# ==============================================================================
+# KMS Crypto Config
+# ==============================================================================
 [crypto]
-# Master Key w Base64
-master_key_b64 = "dWRGdk1pZ0lqNmIzeXo4bEF1SEpvaU5qTndqRWxYOWU="
+current_master_key_version = 1
 default_key_ttl_days = 365
+grace_period_minutes = 30
+
+
+[crypto.master_keys]
+1 = "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI="
