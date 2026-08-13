@@ -91,6 +91,7 @@ impl AppState {
             crypto_service.clone(),
             audit_repo.clone(),
             settings.crypto.grace_period_minutes,
+            Arc::new(settings.acl.clone()),
         ));
 
         Ok(Self {

@@ -11,10 +11,12 @@ use crate::domain::keys::models::{
 };
 use crate::domain::keys::repository::KeyRepository;
 use crate::errors::{AppError, AppResult};
+use crate::config::acl::{AclSettings, ControlAction};
 
 pub struct RotateKeyInput {
     pub service_id: ServiceId,
     pub algorithm: KeyAlgorithm,
+    pub caller_service: ServiceId,
     pub reason: RotationReason,
     pub actor_id: String,
 }
@@ -28,6 +30,7 @@ where
     crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
     audit_repo: Arc<A>,
     grace_period_minutes: GracePeriodMinutes,
+    acl_settings: Arc<AclSettings>,
 }
 
 impl<R, A> RotateKeyUseCase<R, A>
@@ -40,16 +43,41 @@ where
         crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
         audit_repo: Arc<A>,
         grace_period_minutes: GracePeriodMinutes,
+        acl_settings: Arc<AclSettings>,
     ) -> Self {
         Self {
             key_repo,
             crypto_service,
             audit_repo,
             grace_period_minutes,
+            acl_settings,
         }
     }
 
     pub async fn execute(&self, input: RotateKeyInput) -> AppResult<KeyPairEntity> {
+        // ACL check: RotateOwnKeys for own service, RotateAllKeys for other services
+        let required_action = if input.service_id == input.caller_service {
+            ControlAction::RotateOwnKeys
+        } else {
+            ControlAction::RotateAllKeys
+        };
+
+        let caller_cfg = self
+            .acl_settings
+            .services
+            .get(&input.caller_service.0)
+            .ok_or_else(|| AppError::Unauthorized)?;
+
+        let allowed = caller_cfg
+            .allowed_actions
+            .as_ref()
+            .map(|v| v.contains(&required_action))
+            .unwrap_or(false);
+
+        if !allowed {
+            return Err(AppError::Unauthorized);
+        }
+
         // 1. Fetch current active key
         let active_key = self
             .key_repo
@@ -66,15 +94,18 @@ where
         match input.reason {
             RotationReason::Scheduled | RotationReason::Manual => {
                 let valid_until = Utc::now() + Duration::minutes(*self.grace_period_minutes);
-                self.key_repo
-                    .update_key_status(
-                        &active_key.id,
-                        KeyStatus::Deprecated { valid_until },
-                        Some(valid_until),
-                    )
+                let ok = self
+                    .key_repo
+                    .compare_and_set_active_to_deprecated(&active_key.id, valid_until)
                     .await?;
+                if !ok {
+                    return Err(AppError::Conflict(
+                        "Failed to deprecate key: concurrent modification".into(),
+                    ));
+                }
             }
             RotationReason::Compromised => {
+                // For compromised we don't require CAS; just mark compromised
                 self.key_repo
                     .update_key_status(&active_key.id, KeyStatus::Compromised, None)
                     .await?;

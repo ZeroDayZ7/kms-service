@@ -38,6 +38,7 @@ pub enum KeyStatus {
     Active,
     Deprecated { valid_until: DateTime<Utc> },
     Revoked,
+    Expired,
     Compromised,
 }
 

@@ -38,6 +38,8 @@ pub enum AppError {
 
     #[error("Błąd środowiska wykonawczego: {0}")]
     RuntimeError(String),
+    #[error("Zasób w konflikcie: {0}")]
+    Conflict(String),
 
     #[error("Błąd zewnętrznej usługi (HTTP): {0}")]
     ExternalServiceError(String),
@@ -60,6 +62,7 @@ impl AppError {
             Self::Unauthorized => "AUTH_FAILED",
             Self::NotFound(_) => "RESOURCE_NOT_FOUND",
             Self::ValidationError(_) => "VALIDATION_ERROR",
+            Self::Conflict(_) => "CONFLICT_ERROR",
             Self::CryptoError(_) => "CRYPTO_FAILURE",
             Self::DatabaseError(_) => "DATABASE_ERROR",
             Self::RedisError(_) => "CACHE_ERROR",
@@ -82,6 +85,7 @@ impl IntoResponse for AppError {
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
             Self::ValidationError(_) => StatusCode::BAD_REQUEST,
+            Self::Conflict(_) => StatusCode::CONFLICT,
             Self::CryptoError(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::DatabaseError(err) => {
                 tracing::error!(target: "infra::db", %err, "MongoDB Error");

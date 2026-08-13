@@ -34,6 +34,12 @@ pub trait KeyRepository: Send + Sync {
         deprecated_until: Option<DateTime<Utc>>,
     ) -> impl std::future::Future<Output = AppResult<()>> + Send;
 
+    fn compare_and_set_active_to_deprecated(
+        &self,
+        key_id: &Uuid,
+        deprecated_until: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = AppResult<bool>> + Send;
+
     fn get_deprecated_keys_expired(
         &self,
         now: DateTime<Utc>,
@@ -45,4 +51,14 @@ pub trait KeyRepository: Send + Sync {
         algo: KeyAlgorithm,
         now: DateTime<Utc>,
     ) -> impl std::future::Future<Output = AppResult<Option<KeyPairEntity>>> + Send;
+
+    fn get_all_keys(
+        &self,
+    ) -> impl std::future::Future<Output = AppResult<Vec<KeyPairEntity>>> + Send;
+
+    fn update_encrypted_key(
+        &self,
+        key_id: &Uuid,
+        encrypted: crate::domain::crypto::EncryptedPrivateKey,
+    ) -> impl std::future::Future<Output = AppResult<()>> + Send;
 }

@@ -158,4 +158,8 @@ impl KmsCryptoServiceTrait for KmsCryptoService {
 
         Ok(decrypted)
     }
+
+    fn current_master_key_version(&self) -> i32 {
+        self.current_version
+    }
 }

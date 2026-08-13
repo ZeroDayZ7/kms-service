@@ -1,4 +1,3 @@
-use crate::errors::AppError;
 use axum::{
     Json,
     extract::{Path, State},
@@ -110,32 +109,9 @@ pub async fn rotate_key_handler(
     AuthenticatedService(caller_service): AuthenticatedService,
     Json(payload): Json<RotateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
-    // ACL check: require RotateOwnKeys for own service, RotateAllKeys for other services
-    let required_action = if payload.service_id == caller_service.0 {
-        crate::config::acl::ControlAction::RotateOwnKeys
-    } else {
-        crate::config::acl::ControlAction::RotateAllKeys
-    };
-
-    let caller_cfg = state
-        .settings
-        .acl
-        .services
-        .get(&caller_service.0)
-        .ok_or_else(|| AppError::Unauthorized)?;
-
-    let allowed = caller_cfg
-        .allowed_actions
-        .as_ref()
-        .map(|v| v.contains(&required_action))
-        .unwrap_or(false);
-
-    if !allowed {
-        return Err(AppError::Unauthorized);
-    }
-
     let input = crate::application::use_cases::rotate_key::RotateKeyInput {
         service_id: ServiceId(payload.service_id),
+        caller_service: caller_service,
         algorithm: payload.algorithm,
         reason: payload.reason,
         actor_id: payload.actor_id,

@@ -38,7 +38,7 @@ where
         key_repo
             .update_key_status(
                 &key.id,
-                crate::domain::keys::models::KeyStatus::Revoked,
+                crate::domain::keys::models::KeyStatus::Expired,
                 None,
             )
             .await?;
@@ -50,7 +50,7 @@ where
             action: AuditAction::KeyExpired,
             algorithm: key.algorithm,
             status: AuditStatus::Success,
-            reason: Some("Deprecated period expired; key revoked automatically".to_string()),
+            reason: Some("Deprecated period expired; key expired automatically".to_string()),
             timestamp: Utc::now(),
         };
 

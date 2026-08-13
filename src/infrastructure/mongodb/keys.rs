@@ -3,6 +3,7 @@ use std::sync::Arc;
 use mongodb::{
     IndexModel,
     bson::{Binary, DateTime as BsonDateTime, doc, spec::BinarySubtype},
+    options::IndexOptions,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -49,12 +50,19 @@ impl MongoKeyRepository {
     }
 
     pub async fn ensure_indexes(&self) -> AppResult<()> {
+        // Partial unique index to ensure only one Active key per (service_id, algorithm)
+        let index_opts = IndexOptions::builder()
+            .unique(true)
+            .partial_filter_expression(doc! { "status": "Active" })
+            .build();
+
         let active_key_index = IndexModel::builder()
             .keys(doc! {
                 "service_id": 1,
                 "algorithm": 1,
                 "status": 1
             })
+            .options(index_opts)
             .build();
 
         self.collection().create_index(active_key_index).await?;
@@ -88,6 +96,7 @@ impl KeyRepository for MongoKeyRepository {
                 crate::domain::keys::models::KeyStatus::Deprecated { valid_until: _ } => {
                     "Deprecated".to_string()
                 }
+                crate::domain::keys::models::KeyStatus::Expired => "Expired".to_string(),
             },
             deprecated_valid_until: match &key_pair.status {
                 crate::domain::keys::models::KeyStatus::Deprecated { valid_until } => {
@@ -99,7 +108,17 @@ impl KeyRepository for MongoKeyRepository {
             expires_at: key_pair.expires_at.map(Into::into),
         };
 
-        self.collection().insert_one(doc).await?;
+        if let Err(e) = self.collection().insert_one(doc).await {
+            // Map duplicate key error to AppError::Conflict (best-effort detection)
+            let s = e.to_string();
+            if s.contains("E11000")
+                || s.contains("11000")
+                || s.to_lowercase().contains("duplicate key")
+            {
+                return Err(AppError::Conflict("Duplicate active key exists".into()));
+            }
+            return Err(e.into());
+        }
 
         Ok(())
     }
@@ -167,6 +186,7 @@ impl KeyRepository for MongoKeyRepository {
             crate::domain::keys::models::KeyStatus::Revoked => "Revoked",
             crate::domain::keys::models::KeyStatus::Compromised => "Compromised",
             crate::domain::keys::models::KeyStatus::Deprecated { .. } => "Deprecated",
+            crate::domain::keys::models::KeyStatus::Expired => "Expired",
         };
 
         let update_doc = if let Some(dt) = deprecated_until {
@@ -177,6 +197,18 @@ impl KeyRepository for MongoKeyRepository {
 
         self.collection().update_one(filter, update_doc).await?;
         Ok(())
+    }
+
+    async fn compare_and_set_active_to_deprecated(
+        &self,
+        key_id: &Uuid,
+        deprecated_until: chrono::DateTime<chrono::Utc>,
+    ) -> AppResult<bool> {
+        let filter = doc! { "id": key_id.to_string(), "status": "Active" };
+        let update = doc! { "$set": { "status": "Deprecated", "deprecated_valid_until": BsonDateTime::from_chrono(deprecated_until) } };
+
+        let res = self.collection().update_one(filter, update).await?;
+        Ok(res.matched_count == 1 && res.modified_count == 1)
     }
 
     async fn get_deprecated_keys_expired(
@@ -218,6 +250,32 @@ impl KeyRepository for MongoKeyRepository {
             Some(doc) => Ok(Some(map_doc_to_entity(doc)?)),
             None => Ok(None),
         }
+    }
+
+    async fn get_all_keys(&self) -> AppResult<Vec<KeyPairEntity>> {
+        let mut cursor = self.collection().find(doc! {}).await?;
+        let mut keys = Vec::new();
+        while cursor.advance().await? {
+            let doc = cursor.deserialize_current()?;
+            keys.push(map_doc_to_entity(doc)?);
+        }
+        Ok(keys)
+    }
+
+    async fn update_encrypted_key(
+        &self,
+        key_id: &Uuid,
+        encrypted: crate::domain::crypto::EncryptedPrivateKey,
+    ) -> AppResult<()> {
+        let filter = doc! { "id": key_id.to_string() };
+        let update = doc! { "$set": {
+            "encrypted_private_key": Binary { subtype: BinarySubtype::Generic, bytes: encrypted.ciphertext },
+            "nonce": Binary { subtype: BinarySubtype::Generic, bytes: encrypted.nonce },
+            "master_key_version": encrypted.master_key_version
+        }};
+
+        self.collection().update_one(filter, update).await?;
+        Ok(())
     }
 }
 
