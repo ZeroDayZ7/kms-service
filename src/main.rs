@@ -19,6 +19,10 @@ async fn main() {
 
 async fn run() -> anyhow::Result<()> {
     // -------------------------
+    // 0. ENVIRONMENT (.env)
+    // -------------------------
+    // dotenvy::dotenv().ok();
+    // -------------------------
     // 1. CONFIG
     // -------------------------
     let settings = config::load().context("Failed to load configuration")?;
@@ -44,7 +48,7 @@ async fn run() -> anyhow::Result<()> {
     // 4. BOOTSTRAP KEYS (Inicjalizacja kluczy na podstawie ACL)
     // -------------------------
     bootstrap_keys(
-        &settings.acl, // <-- POPRAWIONO: przekazujemy referencję do settings.acl
+        &settings.acl,
         state.key_repo.clone(),
         state.crypto_service.clone(),
     )

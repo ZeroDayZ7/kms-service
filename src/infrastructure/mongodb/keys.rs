@@ -50,8 +50,8 @@ impl MongoKeyRepository {
     }
 
     pub async fn ensure_indexes(&self) -> AppResult<()> {
-        // Partial unique index to ensure only one Active key per (service_id, algorithm)
         let index_opts = IndexOptions::builder()
+            .name("idx_unique_active_service_key".to_string())
             .unique(true)
             .partial_filter_expression(doc! { "status": "Active" })
             .build();
@@ -109,7 +109,6 @@ impl KeyRepository for MongoKeyRepository {
         };
 
         if let Err(e) = self.collection().insert_one(doc).await {
-            // Map duplicate key error to AppError::Conflict (best-effort detection)
             let s = e.to_string();
             if s.contains("E11000")
                 || s.contains("11000")
