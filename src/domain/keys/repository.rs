@@ -1,8 +1,12 @@
 // src/domain/keys/repository.rs
 use crate::{
-    domain::keys::models::{KeyAlgorithm, KeyPairEntity, ServiceId},
+    domain::keys::models::{KeyAlgorithm, KeyPairEntity, KeyStatus, ServiceId},
     errors::AppResult,
 };
+
+use chrono::DateTime;
+use chrono::Utc;
+use uuid::Uuid;
 
 pub trait KeyRepository: Send + Sync {
     fn save_key(
@@ -22,4 +26,23 @@ pub trait KeyRepository: Send + Sync {
         service_id: &ServiceId,
         algo: KeyAlgorithm,
     ) -> impl std::future::Future<Output = AppResult<()>> + Send;
+
+    fn update_key_status(
+        &self,
+        key_id: &Uuid,
+        status: KeyStatus,
+        deprecated_until: Option<DateTime<Utc>>,
+    ) -> impl std::future::Future<Output = AppResult<()>> + Send;
+
+    fn get_deprecated_keys_expired(
+        &self,
+        now: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = AppResult<Vec<KeyPairEntity>>> + Send;
+
+    fn get_active_or_valid_deprecated_key(
+        &self,
+        service_id: &ServiceId,
+        algo: KeyAlgorithm,
+        now: DateTime<Utc>,
+    ) -> impl std::future::Future<Output = AppResult<Option<KeyPairEntity>>> + Send;
 }

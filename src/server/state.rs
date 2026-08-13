@@ -22,7 +22,7 @@ pub type ConcreteGetPrivateKeyUseCase =
     GetPrivateKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
 pub type ConcreteGetSymmetricKeyUseCase =
     GetSymmetricKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
-pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository>;
+pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
 
 pub struct UseCases {
     pub encrypt_data: Arc<ConcreteEncryptDataUseCase>,
@@ -59,6 +59,9 @@ impl AppState {
 
         let crypto_service = Arc::new(KmsCryptoService::new(&settings.crypto)?);
 
+        // Start expiration worker
+        let _ = crate::workers::expiration::run_expiration_worker(key_repo.clone(), audit_repo.clone()).await;
+
         let encrypt_data_use_case = Arc::new(EncryptDataUseCase::new(crypto_service.clone()));
         let decrypt_data_use_case = Arc::new(DecryptDataUseCase::new(crypto_service.clone()));
 
@@ -84,6 +87,7 @@ impl AppState {
         let rotate_key_use_case = Arc::new(RotateKeyUseCase::new(
             key_repo.clone(),
             crypto_service.clone(),
+            audit_repo.clone(),
         ));
 
         Ok(Self {

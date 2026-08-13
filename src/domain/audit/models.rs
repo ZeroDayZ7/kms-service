@@ -9,6 +9,9 @@ pub enum AuditAction {
     GetPublicKey,
     GenerateKey,
     RotateKey,
+    KeyRotated,
+    KeyRevoked,
+    KeyExpired,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

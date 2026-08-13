@@ -81,10 +81,11 @@ where
             return Err(AppError::Unauthorized);
         }
 
-        // 2. Pobieramy aktywny klucz z repozytorium
+        // 2. Pobieramy aktywny klucz lub ważny deprecated z repozytorium
+        let now = chrono::Utc::now();
         let key_entity = match self
             .key_repo
-            .get_active_key(&input.target_service, input.algorithm)
+            .get_active_or_valid_deprecated_key(&input.target_service, input.algorithm, now)
             .await?
         {
             Some(key) => key,

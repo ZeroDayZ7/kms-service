@@ -33,6 +33,21 @@ pub struct RawKeyPair {
     pub private_key_bytes: Vec<u8>,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum KeyStatus {
+    Active,
+    Deprecated { valid_until: DateTime<Utc> },
+    Revoked,
+    Compromised,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum RotationReason {
+    Scheduled,
+    Compromised,
+    Manual,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyPairEntity {
     pub id: Uuid,
@@ -42,7 +57,7 @@ pub struct KeyPairEntity {
     pub public_key_pem: String,
     pub encrypted_private_key: EncryptedPrivateKey,
     pub version: u32,
-    pub is_active: bool,
+    pub status: KeyStatus,
     pub created_at: DateTime<Utc>,
     pub expires_at: Option<DateTime<Utc>>,
 }

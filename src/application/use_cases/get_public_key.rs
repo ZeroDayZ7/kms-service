@@ -30,15 +30,16 @@ where
     }
 
     pub async fn execute(&self, input: GetPublicKeyInput) -> AppResult<KeyPairEntity> {
-        let active_key = self
+        let now = chrono::Utc::now();
+        let key = self
             .key_repo
-            .get_active_key(&input.service_id, input.algorithm)
+            .get_active_or_valid_deprecated_key(&input.service_id, input.algorithm, now)
             .await?;
 
-        match active_key {
-            Some(key) => Ok(key),
+        match key {
+            Some(k) => Ok(k),
             None => Err(AppError::NotFound(format!(
-                "No active public key found for service '{}' with algorithm '{:?}'",
+                "No active or valid deprecated public key found for service '{}' with algorithm '{:?}'",
                 input.service_id.0, input.algorithm
             ))),
         }

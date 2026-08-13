@@ -72,7 +72,7 @@ where
             public_key_pem,
             encrypted_private_key,
             version,
-            is_active: true,
+            status: crate::domain::keys::models::KeyStatus::Active,
             created_at: Utc::now(),
             expires_at: None,
         };

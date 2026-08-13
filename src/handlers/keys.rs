@@ -3,11 +3,11 @@ use axum::{
     extract::{Path, State},
 };
 use serde::{Deserialize, Serialize};
+use crate::errors::AppError;
 
 use crate::{
     application::use_cases::{
         GenerateKeyPairInput, GetPrivateKeyInput, GetPublicKeyInput, GetSymmetricKeyInput,
-        RotateKeyInput,
     },
     domain::keys::models::{KeyAlgorithm, KeyPurpose, ServiceId},
     errors::AppResult,
@@ -29,7 +29,7 @@ pub struct KeyPairResponse {
     pub purpose: KeyPurpose,
     pub public_key_pem: String,
     pub version: u32,
-    pub is_active: bool,
+    pub status: crate::domain::keys::models::KeyStatus,
     pub created_at: String,
 }
 
@@ -37,6 +37,8 @@ pub struct KeyPairResponse {
 pub struct RotateKeyRequest {
     pub service_id: String,
     pub algorithm: KeyAlgorithm,
+    pub reason: crate::domain::keys::models::RotationReason,
+    pub actor_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -74,7 +76,7 @@ pub async fn generate_key_handler(
         purpose: entity.purpose,
         public_key_pem: entity.public_key_pem,
         version: entity.version,
-        is_active: entity.is_active,
+        status: entity.status,
         created_at: entity.created_at.to_rfc3339(),
     }))
 }
@@ -98,19 +100,45 @@ pub async fn get_public_key_handler(
         purpose: entity.purpose,
         public_key_pem: entity.public_key_pem,
         version: entity.version,
-        is_active: entity.is_active,
+        status: entity.status,
         created_at: entity.created_at.to_rfc3339(),
     }))
 }
 
 pub async fn rotate_key_handler(
     State(state): State<AppState>,
-    AuthenticatedService(_caller): AuthenticatedService,
+    AuthenticatedService(caller_service): AuthenticatedService,
     Json(payload): Json<RotateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
-    let input = RotateKeyInput {
+    // ACL check: require RotateOwnKeys for own service, RotateAllKeys for other services
+    let required_action = if payload.service_id == caller_service.0 {
+        crate::config::acl::ControlAction::RotateOwnKeys
+    } else {
+        crate::config::acl::ControlAction::RotateAllKeys
+    };
+
+    let caller_cfg = state
+        .settings
+        .acl
+        .services
+        .get(&caller_service.0)
+        .ok_or_else(|| AppError::Unauthorized)?;
+
+    let allowed = caller_cfg
+        .allowed_actions
+        .as_ref()
+        .map(|v| v.contains(&required_action))
+        .unwrap_or(false);
+
+    if !allowed {
+        return Err(AppError::Unauthorized);
+    }
+
+    let input = crate::application::use_cases::rotate_key::RotateKeyInput {
         service_id: ServiceId(payload.service_id),
         algorithm: payload.algorithm,
+        reason: payload.reason,
+        actor_id: payload.actor_id,
     };
 
     let entity = state.use_cases.rotate_key.execute(input).await?;
@@ -122,7 +150,7 @@ pub async fn rotate_key_handler(
         purpose: entity.purpose,
         public_key_pem: entity.public_key_pem,
         version: entity.version,
-        is_active: entity.is_active,
+        status: entity.status,
         created_at: entity.created_at.to_rfc3339(),
     }))
 }

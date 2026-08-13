@@ -84,10 +84,11 @@ where
             return Err(AppError::Unauthorized);
         }
 
-        // 2. Pobranie klucza z MongoDB
+        // 2. Pobranie klucza z MongoDB (Active lub Deprecated z ważnym valid_until)
+        let now = chrono::Utc::now();
         let active_key = match self
             .key_repo
-            .get_active_key(&input.target_service, input.algorithm)
+            .get_active_or_valid_deprecated_key(&input.target_service, input.algorithm, now)
             .await?
         {
             Some(key) => key,

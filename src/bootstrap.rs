@@ -71,7 +71,7 @@ where
                     public_key_pem: generated_key.public_key_pem.clone(),
                     encrypted_private_key,
                     version: 1,
-                    is_active: true,
+                    status: crate::domain::keys::models::KeyStatus::Active,
                     created_at: chrono::Utc::now(),
                     expires_at: None,
                 };
