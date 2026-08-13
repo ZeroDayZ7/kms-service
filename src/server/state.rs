@@ -90,6 +90,7 @@ impl AppState {
             key_repo.clone(),
             crypto_service.clone(),
             audit_repo.clone(),
+            settings.crypto.grace_period_minutes,
         ));
 
         Ok(Self {

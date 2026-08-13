@@ -1,5 +1,6 @@
 // src/application/use_cases/rotate_key.rs
 use chrono::{Duration, Utc};
+use crate::config::crypto::GracePeriodMinutes;
 use std::sync::Arc;
 
 use crate::domain::audit::models::{AuditAction, AuditLog, AuditStatus};
@@ -26,6 +27,7 @@ where
     key_repo: Arc<R>,
     crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
     audit_repo: Arc<A>,
+    grace_period_minutes: GracePeriodMinutes,
 }
 
 impl<R, A> RotateKeyUseCase<R, A>
@@ -37,11 +39,13 @@ where
         key_repo: Arc<R>,
         crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
         audit_repo: Arc<A>,
+        grace_period_minutes: GracePeriodMinutes,
     ) -> Self {
         Self {
             key_repo,
             crypto_service,
             audit_repo,
+            grace_period_minutes,
         }
     }
 
@@ -61,7 +65,7 @@ where
         // 2. Update old key status according to reason
         match input.reason {
             RotationReason::Scheduled | RotationReason::Manual => {
-                let valid_until = Utc::now() + Duration::minutes(30);
+                let valid_until = Utc::now() + Duration::minutes(*self.grace_period_minutes);
                 self.key_repo
                     .update_key_status(
                         &active_key.id,

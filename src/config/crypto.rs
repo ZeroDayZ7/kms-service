@@ -61,6 +61,31 @@ impl<'de> Deserialize<'de> for KeyTtlDays {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GracePeriodMinutes(pub i64);
+
+impl Deref for GracePeriodMinutes {
+    type Target = i64;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for GracePeriodMinutes {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let val = i64::deserialize(deserializer)?;
+        if !(1..=10_080).contains(&val) {
+            return Err(serde::de::Error::custom(
+                "grace_period_minutes must be between 1 and 10080 minutes (max 7 days)",
+            ));
+        }
+        Ok(GracePeriodMinutes(val))
+    }
+}
+
 // --- GŁÓWNA STRUKTURA KONFIGURACJI KMS Z WERSJONOWANIEM ---
 
 #[derive(Debug, Deserialize, Clone)]
@@ -68,6 +93,7 @@ pub struct CryptoSettings {
     pub current_master_key_version: i32,
     pub master_keys: HashMap<i32, MasterKeyB64>,
     pub default_key_ttl_days: KeyTtlDays,
+    pub grace_period_minutes: GracePeriodMinutes,
 }
 
 impl CryptoSettings {
