@@ -70,7 +70,7 @@ where
                     id: Uuid::now_v7(),
                     caller_service: input.caller_service.clone(),
                     target_service: input.target_service.clone(),
-                    action: AuditAction::GetPrivateKey, // Możesz użyć odpowiedniej akcji dla klucza symetrycznego
+                    action: AuditAction::GetPrivateKey,
                     algorithm: input.algorithm,
                     status: AuditStatus::AccessDenied,
                     reason: Some("ACL Policy Violation for Symmetric Key".to_string()),
