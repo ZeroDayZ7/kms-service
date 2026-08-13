@@ -1,10 +1,10 @@
 use chrono::Utc;
 use std::sync::Arc;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
-use crate::domain::keys::repository::KeyRepository;
 use crate::domain::audit::models::{AuditAction, AuditLog, AuditStatus};
 use crate::domain::audit::repository::AuditRepository;
+use crate::domain::keys::repository::KeyRepository;
 
 pub async fn run_expiration_worker<K, A>(key_repo: Arc<K>, audit_repo: Arc<A>)
 where
@@ -13,7 +13,9 @@ where
 {
     tokio::spawn(async move {
         loop {
-            if let Err(e) = process_expirations(Arc::clone(&key_repo), Arc::clone(&audit_repo)).await {
+            if let Err(e) =
+                process_expirations(Arc::clone(&key_repo), Arc::clone(&audit_repo)).await
+            {
                 tracing::error!("Expiration worker error: {:?}", e);
             }
             sleep(Duration::from_secs(300)).await; // 5 minutes
@@ -21,7 +23,10 @@ where
     });
 }
 
-async fn process_expirations<K, A>(key_repo: Arc<K>, audit_repo: Arc<A>) -> Result<(), Box<dyn std::error::Error>>
+async fn process_expirations<K, A>(
+    key_repo: Arc<K>,
+    audit_repo: Arc<A>,
+) -> Result<(), Box<dyn std::error::Error>>
 where
     K: KeyRepository + Send + Sync,
     A: AuditRepository + Send + Sync,
@@ -31,7 +36,11 @@ where
 
     for key in expired {
         key_repo
-            .update_key_status(&key.id, crate::domain::keys::models::KeyStatus::Revoked, None)
+            .update_key_status(
+                &key.id,
+                crate::domain::keys::models::KeyStatus::Revoked,
+                None,
+            )
             .await?;
 
         let audit = AuditLog {

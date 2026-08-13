@@ -1,9 +1,9 @@
+use crate::errors::AppError;
 use axum::{
     Json,
     extract::{Path, State},
 };
 use serde::{Deserialize, Serialize};
-use crate::errors::AppError;
 
 use crate::{
     application::use_cases::{

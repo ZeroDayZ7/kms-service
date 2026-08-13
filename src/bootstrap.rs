@@ -6,7 +6,7 @@ use crate::{
     domain::{
         crypto::KmsCryptoService,
         keys::{
-            models::{KeyAlgorithm, KeyPairEntity, KeyPurpose},
+            models::{KeyAlgorithm, KeyPairEntity, KeyPurpose, KeyStatus},
             repository::KeyRepository,
         },
     },
@@ -71,7 +71,7 @@ where
                     public_key_pem: generated_key.public_key_pem.clone(),
                     encrypted_private_key,
                     version: 1,
-                    status: crate::domain::keys::models::KeyStatus::Active,
+                    status: KeyStatus::Active,
                     created_at: chrono::Utc::now(),
                     expires_at: None,
                 };

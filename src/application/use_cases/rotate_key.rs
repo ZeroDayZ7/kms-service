@@ -4,10 +4,12 @@ use std::sync::Arc;
 
 use crate::domain::audit::models::{AuditAction, AuditLog, AuditStatus};
 use crate::domain::audit::repository::AuditRepository;
-use crate::domain::keys::models::{KeyAlgorithm, KeyPairEntity, RotationReason, KeyStatus, ServiceId};
+use crate::domain::crypto::KmsCryptoService;
+use crate::domain::keys::models::{
+    KeyAlgorithm, KeyPairEntity, KeyStatus, RotationReason, ServiceId,
+};
 use crate::domain::keys::repository::KeyRepository;
 use crate::errors::{AppError, AppResult};
-use crate::domain::crypto::KmsCryptoService;
 
 pub struct RotateKeyInput {
     pub service_id: ServiceId,
@@ -61,7 +63,11 @@ where
             RotationReason::Scheduled | RotationReason::Manual => {
                 let valid_until = Utc::now() + Duration::minutes(30);
                 self.key_repo
-                    .update_key_status(&active_key.id, KeyStatus::Deprecated { valid_until }, Some(valid_until))
+                    .update_key_status(
+                        &active_key.id,
+                        KeyStatus::Deprecated { valid_until },
+                        Some(valid_until),
+                    )
                     .await?;
             }
             RotationReason::Compromised => {

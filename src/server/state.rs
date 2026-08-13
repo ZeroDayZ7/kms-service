@@ -60,7 +60,9 @@ impl AppState {
         let crypto_service = Arc::new(KmsCryptoService::new(&settings.crypto)?);
 
         // Start expiration worker
-        let _ = crate::workers::expiration::run_expiration_worker(key_repo.clone(), audit_repo.clone()).await;
+        let _ =
+            crate::workers::expiration::run_expiration_worker(key_repo.clone(), audit_repo.clone())
+                .await;
 
         let encrypt_data_use_case = Arc::new(EncryptDataUseCase::new(crypto_service.clone()));
         let decrypt_data_use_case = Arc::new(DecryptDataUseCase::new(crypto_service.clone()));
