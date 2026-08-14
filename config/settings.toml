@@ -28,6 +28,7 @@ pool_size = 5
 auth_source = "admin"
 
 [redis]
+enabled = true
 host = "127.0.0.1"
 port = 6380
 db = 0

@@ -12,25 +12,33 @@ pub struct HealthResponse {
     redis: &'static str,
 }
 
+//# region health
 pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
     let check_timeout = Duration::from_secs(2);
 
-    let (db_res, redis_res) = tokio::join!(
-        timeout(check_timeout, state.db.run_command(doc! {"ping": 1})),
-        timeout(check_timeout, state.redis_manager.ping())
-    );
+    let db_res = timeout(check_timeout, state.db.run_command(doc! {"ping": 1})).await;
+
+    let redis_status = match state.redis_manager.as_ref() {
+        Some(redis) => match timeout(check_timeout, redis.ping()).await {
+            Ok(Ok(_)) => "ok",
+            Ok(Err(_)) => "error",
+            Err(_) => "error",
+        },
+        None => {
+            if state.settings.redis.enabled {
+                "error"
+            } else {
+                "disabled"
+            }
+        }
+    };
 
     let db_status = match db_res {
         Ok(Ok(_)) => "ok",
         _ => "error",
     };
 
-    let redis_status = match redis_res {
-        Ok(Ok(_)) => "ok",
-        _ => "error",
-    };
-
-    let is_ok = db_status == "ok" && redis_status == "ok";
+    let is_ok = db_status == "ok" && (redis_status == "ok" || redis_status == "disabled");
 
     let status_code = if is_ok {
         StatusCode::OK
@@ -47,3 +55,4 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         }),
     )
 }
+//# endregion
