@@ -43,16 +43,15 @@ where
     }
 
     pub async fn execute(&self, input: GenerateKeyPairInput) -> AppResult<KeyPairEntity> {
-        let has_generate_permission = self.acl_settings.has_control_action(
-            &input.caller_service,
-            &ControlAction::GenerateKeys,
-        ) || self.acl_settings.has_control_action(
-            &input.caller_service,
-            &ControlAction::RotateOwnKeys,
-        ) || self.acl_settings.has_control_action(
-            &input.caller_service,
-            &ControlAction::RotateAllKeys,
-        );
+        let has_generate_permission = self
+            .acl_settings
+            .has_control_action(&input.caller_service, &ControlAction::GenerateKeys)
+            || self
+                .acl_settings
+                .has_control_action(&input.caller_service, &ControlAction::RotateOwnKeys)
+            || self
+                .acl_settings
+                .has_control_action(&input.caller_service, &ControlAction::RotateAllKeys);
 
         if !has_generate_permission {
             return Err(AppError::Unauthorized);

@@ -287,7 +287,11 @@ impl KeyRepository for MongoKeyRepository {
             .limit(batch_size as i64)
             .build();
 
-        let mut cursor = self.collection().find(filter).with_options(find_options).await?;
+        let mut cursor = self
+            .collection()
+            .find(filter)
+            .with_options(find_options)
+            .await?;
         let mut keys = Vec::new();
         while cursor.advance().await? {
             let doc = cursor.deserialize_current()?;

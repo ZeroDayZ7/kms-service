@@ -105,7 +105,10 @@ async fn run_command(cli: Cli) -> anyhow::Result<()> {
             .await
             .context("Failed to rewrap keys")?;
 
-            info!("✅ Rewrapped {} keys to master version {}", count, target_version);
+            info!(
+                "✅ Rewrapped {} keys to master version {}",
+                count, target_version
+            );
         }
     }
 

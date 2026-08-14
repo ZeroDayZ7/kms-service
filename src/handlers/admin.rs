@@ -1,7 +1,4 @@
-use axum::{
-    Json,
-    extract::State,
-};
+use axum::{Json, extract::State};
 use serde::Deserialize;
 
 use crate::{
