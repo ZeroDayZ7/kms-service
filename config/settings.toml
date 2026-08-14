@@ -47,6 +47,7 @@ auth_burst = 100
 current_master_key_version = 1
 default_key_ttl_days = 365
 grace_period_minutes = 30
+enable_http_rewrap = false
 
 
 [crypto.master_keys]

@@ -7,8 +7,10 @@ use serde::{Deserialize, Serialize};
 pub enum AuditAction {
     GetPrivateKey,
     GetPublicKey,
+    GetSymmetricKey,
     GenerateKey,
     RotateKey,
+    RewrapKeys,
     KeyRotated,
     KeyRevoked,
     KeyExpired,

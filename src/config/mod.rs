@@ -1,6 +1,5 @@
 // src/config/mod.rs
 use config::{Config, ConfigError, Environment, File};
-use dotenvy::dotenv;
 
 mod database;
 mod log;
@@ -28,8 +27,13 @@ pub fn load() -> Result<Settings, ConfigError> {
     load_from(base_path)
 }
 
+// src/config/mod.rs
+
 pub fn load_from<P: AsRef<std::path::Path>>(path: P) -> Result<Settings, ConfigError> {
-    dotenv().ok();
+    let root_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let env_path = root_dir.join(".env");
+
+    dotenvy::from_filename(&env_path).ok();
 
     let settings_path = path.as_ref();
     let config_dir = settings_path
@@ -37,10 +41,17 @@ pub fn load_from<P: AsRef<std::path::Path>>(path: P) -> Result<Settings, ConfigE
         .unwrap_or_else(|| std::path::Path::new("config"));
     let acl_path = config_dir.join("services_acl.toml");
 
-    Config::builder()
+    let settings: Settings = Config::builder()
         .add_source(File::from(settings_path).required(true))
         .add_source(File::from(acl_path).required(true))
-        .add_source(Environment::default().separator("__"))
+        .add_source(
+            Environment::default()
+                .separator("__")
+                .try_parsing(true)
+                .with_list_parse_key("value"),
+        )
         .build()?
-        .try_deserialize()
+        .try_deserialize()?;
+
+    Ok(settings)
 }

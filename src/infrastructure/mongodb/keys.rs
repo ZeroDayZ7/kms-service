@@ -50,8 +50,8 @@ impl MongoKeyRepository {
     }
 
     pub async fn ensure_indexes(&self) -> AppResult<()> {
-        // Partial unique index to ensure only one Active key per (service_id, algorithm)
         let index_opts = IndexOptions::builder()
+            .name("idx_unique_active_service_key".to_string())
             .unique(true)
             .partial_filter_expression(doc! { "status": "Active" })
             .build();
@@ -109,7 +109,6 @@ impl KeyRepository for MongoKeyRepository {
         };
 
         if let Err(e) = self.collection().insert_one(doc).await {
-            // Map duplicate key error to AppError::Conflict (best-effort detection)
             let s = e.to_string();
             if s.contains("E11000")
                 || s.contains("11000")
@@ -276,6 +275,51 @@ impl KeyRepository for MongoKeyRepository {
 
         self.collection().update_one(filter, update).await?;
         Ok(())
+    }
+
+    async fn get_keys_needing_rewrap(
+        &self,
+        current_master_version: i32,
+        batch_size: usize,
+    ) -> AppResult<Vec<KeyPairEntity>> {
+        let filter = doc! { "master_key_version": { "$ne": current_master_version } };
+        let find_options = mongodb::options::FindOptions::builder()
+            .limit(batch_size as i64)
+            .build();
+
+        let mut cursor = self
+            .collection()
+            .find(filter)
+            .with_options(find_options)
+            .await?;
+        let mut keys = Vec::new();
+        while cursor.advance().await? {
+            let doc = cursor.deserialize_current()?;
+            keys.push(map_doc_to_entity(doc)?);
+        }
+
+        Ok(keys)
+    }
+
+    async fn update_encrypted_keys_batch(
+        &self,
+        updates: Vec<(Uuid, crate::domain::crypto::EncryptedPrivateKey, i32)>,
+    ) -> AppResult<usize> {
+        let mut updated = 0usize;
+
+        for (key_id, encrypted, current_version) in updates {
+            let filter = doc! { "id": key_id.to_string() };
+            let update = doc! { "$set": {
+                "encrypted_private_key": Binary { subtype: BinarySubtype::Generic, bytes: encrypted.ciphertext },
+                "nonce": Binary { subtype: BinarySubtype::Generic, bytes: encrypted.nonce },
+                "master_key_version": current_version
+            }};
+
+            let result = self.collection().update_one(filter, update).await?;
+            updated += result.modified_count as usize;
+        }
+
+        Ok(updated)
     }
 }
 

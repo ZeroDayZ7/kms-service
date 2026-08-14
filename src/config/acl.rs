@@ -30,6 +30,7 @@ pub struct ServiceConfig {
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub enum ControlAction {
+    GenerateKeys,
     RotateOwnKeys,
     RotateAllKeys,
     RevokeKeys,
@@ -59,6 +60,17 @@ impl AclSettings {
                 && rule.algorithm == algorithm
                 && rule.access_level == *requested_access
         })
+    }
+
+    pub fn has_control_action(&self, caller: &ServiceId, action: &ControlAction) -> bool {
+        let Some(service_cfg) = self.services.get(&caller.0) else {
+            return false;
+        };
+
+        service_cfg
+            .allowed_actions
+            .as_ref()
+            .is_some_and(|actions| actions.contains(action))
     }
 }
 // endregion

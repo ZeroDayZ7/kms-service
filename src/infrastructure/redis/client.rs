@@ -51,7 +51,7 @@ impl RedisManager {
                 "Timeout podczas inicjalizacji połączenia z Redis".into(),
             )),
         }
-    } // <--- To jest to brakujące zamknięcie funkcji new()!
+    }
 
     pub async fn set_ex(&self, key: &str, value: &str, ttl_sec: u64) -> AppResult<()> {
         let expiration = Expiration::EX(

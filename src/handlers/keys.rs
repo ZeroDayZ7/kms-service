@@ -7,8 +7,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     application::use_cases::{
         GenerateKeyPairInput, GetPrivateKeyInput, GetPublicKeyInput, GetSymmetricKeyInput,
+        RotateKeyInput,
     },
-    domain::keys::models::{KeyAlgorithm, KeyPurpose, ServiceId},
+    domain::keys::models::{KeyAlgorithm, KeyPurpose, KeyStatus, RotationReason, ServiceId},
     errors::AppResult,
     server::{extractors::authenticated_service::AuthenticatedService, state::AppState},
 };
@@ -28,7 +29,7 @@ pub struct KeyPairResponse {
     pub purpose: KeyPurpose,
     pub public_key_pem: String,
     pub version: u32,
-    pub status: crate::domain::keys::models::KeyStatus,
+    pub status: KeyStatus,
     pub created_at: String,
 }
 
@@ -36,7 +37,7 @@ pub struct KeyPairResponse {
 pub struct RotateKeyRequest {
     pub service_id: String,
     pub algorithm: KeyAlgorithm,
-    pub reason: crate::domain::keys::models::RotationReason,
+    pub reason: RotationReason,
     pub actor_id: String,
 }
 
@@ -61,6 +62,7 @@ pub async fn generate_key_handler(
     Json(payload): Json<GenerateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = GenerateKeyPairInput {
+        caller_service: _caller.clone(),
         service_id: ServiceId(payload.service_id),
         algorithm: payload.algorithm,
         purpose: payload.purpose,
@@ -109,9 +111,9 @@ pub async fn rotate_key_handler(
     AuthenticatedService(caller_service): AuthenticatedService,
     Json(payload): Json<RotateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
-    let input = crate::application::use_cases::rotate_key::RotateKeyInput {
+    let input = RotateKeyInput {
         service_id: ServiceId(payload.service_id),
-        caller_service: caller_service,
+        caller_service,
         algorithm: payload.algorithm,
         reason: payload.reason,
         actor_id: payload.actor_id,

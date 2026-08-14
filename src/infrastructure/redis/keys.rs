@@ -1,31 +1,37 @@
-// src/infrastructure/redis/keys.rs
-
-use crate::domain::value_objects::api_route::ApiRoute;
 use crate::domain::value_objects::client_ip::ClientIp;
-use crate::domain::value_objects::session_token::SessionToken;
-use crate::domain::value_objects::user_id::UserId;
+use std::ops::Deref;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RedisKey(String);
 
 impl RedisKey {
-    pub fn session(token: &SessionToken) -> Self {
-        Self(format!("auth:session:{}", token.as_str()))
+    /// Klucz pod rate limiter oparty o IP klienta oraz konkretną ścieżkę (np. "/api/v1/encrypt")
+    pub fn rate_limit(path: &str, ip: &ClientIp) -> Self {
+        let clean_path = path.trim_start_matches('/');
+        Self(format!("rl:{clean_path}:{}", ip.as_str()))
     }
 
-    pub fn user_profile(id: &UserId) -> Self {
-        Self(format!("user:profile:{id}"))
-    }
-
-    pub fn rate_limit(route: ApiRoute, ip: &ClientIp) -> Self {
-        Self(format!("rl:{}:{}", route.as_str(), ip.as_str()))
-    }
     pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl AsRef<str> for RedisKey {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Deref for RedisKey {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl std::fmt::Display for RedisKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        f.write_str(&self.0)
     }
 }

@@ -94,6 +94,8 @@ pub struct CryptoSettings {
     pub master_keys: HashMap<i32, MasterKeyB64>,
     pub default_key_ttl_days: KeyTtlDays,
     pub grace_period_minutes: GracePeriodMinutes,
+    #[serde(default)]
+    pub enable_http_rewrap: bool,
 }
 
 impl CryptoSettings {

@@ -1,5 +1,4 @@
 use crate::config::rate_limit::RateLimitTier;
-use crate::domain::value_objects::api_route::ApiRoute;
 use crate::domain::value_objects::client_ip::ClientIp;
 use crate::infrastructure::redis::keys::RedisKey;
 use crate::server::state::AppState;
@@ -12,16 +11,6 @@ use axum::{
 };
 use std::net::SocketAddr;
 use tracing::error;
-
-fn map_path_to_route(path: &str) -> ApiRoute {
-    if path.starts_with("/auth/login") {
-        ApiRoute::Login
-    } else if path.starts_with("/auth/register") {
-        ApiRoute::Register
-    } else {
-        ApiRoute::Profile
-    }
-}
 
 fn build_rate_limit_headers(limit: u64, current: u64) -> HeaderMap {
     let mut headers = HeaderMap::new();
@@ -44,16 +33,15 @@ pub async fn redis_rate_limit_middleware(
 ) -> Response {
     let path = req.uri().path();
 
-    // 1. Tworzymy Value Objecty
+    // 1. Tworzymy Value Object dla IP
     let ip = ClientIp::new(addr.ip().to_string());
-    let route = map_path_to_route(path);
 
-    // 2. Pobieramy limity na podstawie Tieru
+    // 2. Pobieramy limity na podstawie Tieru ścieżki
     let tier = RateLimitTier::from_path(path);
     let (limit, window) = tier.get_limits(&state.settings.rate_limit);
 
-    // 3. Generujemy klucz używając RedisKey (zamiast make_key)
-    let key = RedisKey::rate_limit(route, &ip);
+    // 3. Generujemy klucz Redis bezpośrednio ze ścieżki (bez zbędnego enum ApiRoute)
+    let key = RedisKey::rate_limit(path, &ip);
 
     // 4. Sprawdzamy limit w Redis
     let rl_status = match state.redis_rate_limiter.check(&key, limit, window).await {
