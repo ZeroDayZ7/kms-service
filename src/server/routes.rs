@@ -1,5 +1,5 @@
 // src/server/routes.rs
-use crate::handlers::{crypto, health, keys};
+use crate::handlers::{admin, crypto, health, keys};
 use crate::server::middleware::{self, RateLimitLayers};
 use crate::server::state::AppState;
 
@@ -45,6 +45,10 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/keys/symmetric",
             post(keys::get_symmetric_key_handler).layer(rate_limits.auth.clone()),
+        )
+        .route(
+            "/api/v1/admin/kms/rewrap",
+            post(admin::rewrap_keys_handler).layer(rate_limits.auth.clone()),
         )
         // Endpointy szyfrowania kopertowego (Envelope Encryption)
         .route(

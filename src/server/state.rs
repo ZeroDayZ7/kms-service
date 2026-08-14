@@ -70,6 +70,7 @@ impl AppState {
         let generate_key_pair_use_case = Arc::new(GenerateKeyPairUseCase::new(
             key_repo.clone(),
             crypto_service.clone(),
+            Arc::new(settings.acl.clone()),
         ));
         let get_public_key_use_case = Arc::new(GetPublicKeyUseCase::new(key_repo.clone()));
 
@@ -83,6 +84,7 @@ impl AppState {
         let get_symmetric_key_use_case = Arc::new(GetSymmetricKeyUseCase::new(
             key_repo.clone(),
             audit_repo.clone(),
+            crypto_service.clone(),
             Arc::new(settings.acl.clone()),
         ));
 

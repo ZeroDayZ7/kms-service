@@ -2,7 +2,6 @@ use crate::domain::crypto::KmsCryptoService;
 use crate::domain::keys::repository::KeyRepository;
 use crate::errors::{AppError, AppResult};
 use std::sync::Arc;
-use tokio::sync::Semaphore;
 
 pub struct RewrapKeysInput {
     pub target_master_version: i32,
@@ -20,7 +19,7 @@ where
     // 1. Walidacja wersji Master Key
     let current_version = crypto_service.current_master_key_version();
     if current_version != input.target_master_version {
-        return Err(AppError::BadRequest(format!(
+        return Err(AppError::ValidationError(format!(
             "Target master key version {} does not match KMS active version {}",
             input.target_master_version, current_version
         )));

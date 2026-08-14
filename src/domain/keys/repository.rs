@@ -61,4 +61,15 @@ pub trait KeyRepository: Send + Sync {
         key_id: &Uuid,
         encrypted: crate::domain::crypto::EncryptedPrivateKey,
     ) -> impl std::future::Future<Output = AppResult<()>> + Send;
+
+    fn get_keys_needing_rewrap(
+        &self,
+        current_master_version: i32,
+        batch_size: usize,
+    ) -> impl std::future::Future<Output = AppResult<Vec<KeyPairEntity>>> + Send;
+
+    fn update_encrypted_keys_batch(
+        &self,
+        updates: Vec<(Uuid, crate::domain::crypto::EncryptedPrivateKey, i32)>,
+    ) -> impl std::future::Future<Output = AppResult<usize>> + Send;
 }

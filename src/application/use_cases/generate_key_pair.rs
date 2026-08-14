@@ -2,6 +2,7 @@ use chrono::Utc;
 use std::sync::Arc;
 
 use crate::{
+    config::acl::{AclSettings, ControlAction},
     domain::{
         crypto::KmsCryptoService,
         keys::{
@@ -9,10 +10,11 @@ use crate::{
             repository::KeyRepository,
         },
     },
-    errors::AppResult,
+    errors::{AppError, AppResult},
 };
 
 pub struct GenerateKeyPairInput {
+    pub caller_service: ServiceId,
     pub service_id: ServiceId,
     pub algorithm: KeyAlgorithm,
     pub purpose: KeyPurpose,
@@ -21,20 +23,41 @@ pub struct GenerateKeyPairInput {
 pub struct GenerateKeyPairUseCase<R> {
     key_repo: Arc<R>,
     crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
+    acl_settings: Arc<AclSettings>,
 }
 
 impl<R> GenerateKeyPairUseCase<R>
 where
     R: KeyRepository,
 {
-    pub fn new(key_repo: Arc<R>, crypto_service: Arc<dyn KmsCryptoService + Send + Sync>) -> Self {
+    pub fn new(
+        key_repo: Arc<R>,
+        crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
+        acl_settings: Arc<AclSettings>,
+    ) -> Self {
         Self {
             key_repo,
             crypto_service,
+            acl_settings,
         }
     }
 
     pub async fn execute(&self, input: GenerateKeyPairInput) -> AppResult<KeyPairEntity> {
+        let has_generate_permission = self.acl_settings.has_control_action(
+            &input.caller_service,
+            &ControlAction::GenerateKeys,
+        ) || self.acl_settings.has_control_action(
+            &input.caller_service,
+            &ControlAction::RotateOwnKeys,
+        ) || self.acl_settings.has_control_action(
+            &input.caller_service,
+            &ControlAction::RotateAllKeys,
+        );
+
+        if !has_generate_permission {
+            return Err(AppError::Unauthorized);
+        }
+
         let current_key = self
             .key_repo
             .get_active_key(&input.service_id, input.algorithm)

@@ -9,6 +9,7 @@ use crate::{
             models::{AuditAction, AuditLog, AuditStatus},
             repository::AuditRepository,
         },
+        crypto::KmsCryptoService,
         keys::{
             models::{KeyAlgorithm, ServiceId},
             repository::KeyRepository,
@@ -39,6 +40,7 @@ where
 {
     key_repo: Arc<K>,
     audit_repo: Arc<A>,
+    crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
     acl: Arc<AclSettings>,
 }
 
@@ -47,10 +49,16 @@ where
     K: KeyRepository,
     A: AuditRepository,
 {
-    pub fn new(key_repo: Arc<K>, audit_repo: Arc<A>, acl: Arc<AclSettings>) -> Self {
+    pub fn new(
+        key_repo: Arc<K>,
+        audit_repo: Arc<A>,
+        crypto_service: Arc<dyn KmsCryptoService + Send + Sync>,
+        acl: Arc<AclSettings>,
+    ) -> Self {
         Self {
             key_repo,
             audit_repo,
+            crypto_service,
             acl,
         }
     }
@@ -70,7 +78,7 @@ where
                     id: Uuid::now_v7(),
                     caller_service: input.caller_service.clone(),
                     target_service: input.target_service.clone(),
-                    action: AuditAction::GetPrivateKey,
+                    action: AuditAction::GetSymmetricKey,
                     algorithm: input.algorithm,
                     status: AuditStatus::AccessDenied,
                     reason: Some("ACL Policy Violation for Symmetric Key".to_string()),
@@ -94,7 +102,7 @@ where
                         id: Uuid::now_v7(),
                         caller_service: input.caller_service.clone(),
                         target_service: input.target_service.clone(),
-                        action: AuditAction::GetPrivateKey,
+                        action: AuditAction::GetSymmetricKey,
                         algorithm: input.algorithm,
                         status: AuditStatus::NotFound,
                         reason: Some("Symmetric Key does not exist".to_string()),
@@ -109,13 +117,17 @@ where
             }
         };
 
+        let decrypted = self
+            .crypto_service
+            .decrypt_private_key(&key_entity.encrypted_private_key)?;
+
         // 3. Rejestracja udanego odczytu w audycie
         self.audit_repo
             .record(AuditLog {
                 id: Uuid::now_v7(),
                 caller_service: input.caller_service,
                 target_service: input.target_service,
-                action: AuditAction::GetPrivateKey,
+                action: AuditAction::GetSymmetricKey,
                 algorithm: input.algorithm,
                 status: AuditStatus::Success,
                 reason: None,
@@ -127,7 +139,7 @@ where
             service_id: key_entity.service_id,
             algorithm: key_entity.algorithm,
             version: key_entity.version,
-            key_bytes: key_entity.encrypted_private_key.ciphertext,
+            key_bytes: decrypted,
         })
     }
 }

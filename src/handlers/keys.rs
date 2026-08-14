@@ -62,6 +62,7 @@ pub async fn generate_key_handler(
     Json(payload): Json<GenerateKeyRequest>,
 ) -> AppResult<Json<KeyPairResponse>> {
     let input = GenerateKeyPairInput {
+        caller_service: _caller.clone(),
         service_id: ServiceId(payload.service_id),
         algorithm: payload.algorithm,
         purpose: payload.purpose,
