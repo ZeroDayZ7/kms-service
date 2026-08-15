@@ -1,7 +1,9 @@
 use crate::domain::crypto::EncryptedPrivateKey;
-use crate::errors::AppResult;
-use crate::server::state::AppState;
+use crate::domain::keys::models::{KeyAlgorithm, ServiceId};
+use crate::errors::{AppError, AppResult};
+use crate::server::{extractors::authenticated_service::AuthenticatedService, state::AppState};
 use axum::{Json, extract::State};
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -34,6 +36,21 @@ pub struct DecryptResponse {
     pub plaintext: Vec<u8>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SignDataRequest {
+    pub target_service: String,
+    pub algorithm: KeyAlgorithm,
+    pub payload_b64: String,
+    pub key_version: Option<u32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SignDataResponse {
+    pub signature_b64: String,
+    pub key_version: u32,
+    pub algorithm: KeyAlgorithm,
+}
+
 pub async fn encrypt_handler(
     State(state): State<AppState>,
     Json(payload): Json<EncryptRequest>,
@@ -61,5 +78,31 @@ pub async fn decrypt_handler(
 
     Ok(Json(DecryptResponse {
         plaintext: decrypted,
+    }))
+}
+
+pub async fn sign_data_handler(
+    State(state): State<AppState>,
+    AuthenticatedService(caller_service): AuthenticatedService,
+    Json(payload): Json<SignDataRequest>,
+) -> AppResult<Json<SignDataResponse>> {
+    let payload_bytes = BASE64
+        .decode(&payload.payload_b64)
+        .map_err(|e| AppError::ValidationError(format!("Invalid payload_b64: {e}")))?;
+
+    let input = crate::application::use_cases::sign_data::SignDataInput {
+        caller_service,
+        target_service: ServiceId(payload.target_service),
+        algorithm: payload.algorithm,
+        payload: payload_bytes,
+        key_version: payload.key_version,
+    };
+
+    let output = state.use_cases.sign_data.execute(input).await?;
+
+    Ok(Json(SignDataResponse {
+        signature_b64: BASE64.encode(output.signature_bytes),
+        key_version: output.key_version,
+        algorithm: output.algorithm,
     }))
 }

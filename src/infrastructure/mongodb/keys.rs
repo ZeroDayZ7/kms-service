@@ -141,6 +141,26 @@ impl KeyRepository for MongoKeyRepository {
         }
     }
 
+    async fn get_key_by_version(
+        &self,
+        service_id: &ServiceId,
+        algorithm: KeyAlgorithm,
+        version: u32,
+    ) -> AppResult<Option<KeyPairEntity>> {
+        let filter = doc! {
+            "service_id": &service_id.0,
+            "algorithm": format!("{:?}", algorithm),
+            "version": version as i32,
+        };
+
+        let result = self.collection().find_one(filter).await?;
+
+        match result {
+            Some(doc) => Ok(Some(map_doc_to_entity(doc)?)),
+            None => Ok(None),
+        }
+    }
+
     async fn get_all_active_public_keys(&self) -> AppResult<Vec<KeyPairEntity>> {
         let filter = doc! { "status": "Active" };
         let mut cursor = self.collection().find(filter).await?;

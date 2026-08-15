@@ -1,6 +1,6 @@
 use crate::application::use_cases::{
     DecryptDataUseCase, EncryptDataUseCase, GenerateKeyPairUseCase, GetPrivateKeyUseCase,
-    GetPublicKeyUseCase, GetSymmetricKeyUseCase, RotateKeyUseCase,
+    GetPublicKeyUseCase, GetSymmetricKeyUseCase, RotateKeyUseCase, SignDataUseCase,
 };
 use crate::config::Settings;
 use crate::domain::rate_limiter::{InMemoryRateLimiter, RateLimiter};
@@ -24,6 +24,7 @@ pub type ConcreteGetPrivateKeyUseCase =
 pub type ConcreteGetSymmetricKeyUseCase =
     GetSymmetricKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
 pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
+pub type ConcreteSignDataUseCase = SignDataUseCase<MongoKeyRepository, MongoAuditRepository>;
 
 pub struct UseCases {
     pub encrypt_data: Arc<ConcreteEncryptDataUseCase>,
@@ -33,6 +34,7 @@ pub struct UseCases {
     pub get_private_key: Arc<ConcreteGetPrivateKeyUseCase>,
     pub get_symmetric_key: Arc<ConcreteGetSymmetricKeyUseCase>,
     pub rotate_key: Arc<ConcreteRotateKeyUseCase>,
+    pub sign_data: Arc<ConcreteSignDataUseCase>,
 }
 
 #[derive(Clone)]
@@ -107,6 +109,13 @@ impl AppState {
             Arc::new(settings.acl.clone()),
         ));
 
+        let sign_data_use_case = Arc::new(SignDataUseCase::new(
+            key_repo.clone(),
+            audit_repo.clone(),
+            crypto_service.clone(),
+            Arc::new(settings.acl.clone()),
+        ));
+
         Ok(Self {
             settings,
             use_cases: Arc::new(UseCases {
@@ -117,6 +126,7 @@ impl AppState {
                 get_private_key: get_private_key_use_case,
                 get_symmetric_key: get_symmetric_key_use_case,
                 rotate_key: rotate_key_use_case,
+                sign_data: sign_data_use_case,
             }),
             rate_limiter,
             db: mongo_db,

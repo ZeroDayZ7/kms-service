@@ -7,6 +7,7 @@ pub mod get_public_key;
 pub mod get_symmetric_key;
 pub mod rewrap_keys;
 pub mod rotate_key;
+pub mod sign_data;
 
 pub use decrypt_data::*;
 pub use encrypt_data::*;
@@ -16,3 +17,4 @@ pub use get_public_key::*;
 pub use get_symmetric_key::*;
 pub use rewrap_keys::*;
 pub use rotate_key::*;
+pub use sign_data::*;
