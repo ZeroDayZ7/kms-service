@@ -1,24 +1,25 @@
-use crate::infrastructure::redis::rate_limiter::RedisRateLimiter;
+use crate::config::Settings;
+use crate::domain::rate_limiter::RateLimiter;
 use axum::body::Body;
 use governor::middleware::StateInformationMiddleware;
 use std::sync::Arc;
 use tower_governor::{
     GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor,
 };
+
 type AxumGovernorLayer = GovernorLayer<SmartIpKeyExtractor, StateInformationMiddleware, Body>;
-use crate::config::Settings;
 
 #[derive(Clone)]
 pub struct RateLimitLayers {
     pub global: AxumGovernorLayer,
     pub health: AxumGovernorLayer,
     pub auth: AxumGovernorLayer,
-    pub redis_limiter: Arc<RedisRateLimiter>,
+    pub rate_limiter: Arc<dyn RateLimiter>,
 }
 
 impl RateLimitLayers {
-    // Dodajemy redis_limiter do argumentów funkcji new
-    pub fn new(settings: &Settings, limiter: Arc<RedisRateLimiter>) -> Self {
+    //# region new
+    pub fn new(settings: &Settings, limiter: Arc<dyn RateLimiter>) -> Self {
         let global_conf = GovernorConfigBuilder::default()
             .key_extractor(SmartIpKeyExtractor)
             .per_second(settings.rate_limit.global_per_second)
@@ -47,7 +48,8 @@ impl RateLimitLayers {
             global: GovernorLayer::new(Arc::new(global_conf)),
             health: GovernorLayer::new(Arc::new(health_conf)),
             auth: GovernorLayer::new(Arc::new(auth_conf)),
-            redis_limiter: limiter,
+            rate_limiter: limiter,
         }
     }
+    //# endregion
 }

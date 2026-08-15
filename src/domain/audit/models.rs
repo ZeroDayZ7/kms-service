@@ -11,6 +11,7 @@ pub enum AuditAction {
     GenerateKey,
     RotateKey,
     RewrapKeys,
+    SignData,
     KeyRotated,
     KeyRevoked,
     KeyExpired,
@@ -21,6 +22,7 @@ pub enum AuditStatus {
     Success,
     AccessDenied,
     NotFound,
+    Failure,
     Error(String),
 }
 

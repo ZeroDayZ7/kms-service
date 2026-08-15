@@ -12,6 +12,7 @@ use axum::{
 use std::net::SocketAddr;
 use tracing::error;
 
+//# region build_rate_limit_headers
 fn build_rate_limit_headers(limit: u64, current: u64) -> HeaderMap {
     let mut headers = HeaderMap::new();
     let remaining = limit.saturating_sub(current);
@@ -24,7 +25,9 @@ fn build_rate_limit_headers(limit: u64, current: u64) -> HeaderMap {
     }
     headers
 }
+//# endregion
 
+//# region redis_rate_limit_middleware
 pub async fn redis_rate_limit_middleware(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -32,19 +35,12 @@ pub async fn redis_rate_limit_middleware(
     next: Next,
 ) -> Response {
     let path = req.uri().path();
-
-    // 1. Tworzymy Value Object dla IP
     let ip = ClientIp::new(addr.ip().to_string());
-
-    // 2. Pobieramy limity na podstawie Tieru ścieżki
     let tier = RateLimitTier::from_path(path);
     let (limit, window) = tier.get_limits(&state.settings.rate_limit);
-
-    // 3. Generujemy klucz Redis bezpośrednio ze ścieżki (bez zbędnego enum ApiRoute)
     let key = RedisKey::rate_limit(path, &ip);
 
-    // 4. Sprawdzamy limit w Redis
-    let rl_status = match state.redis_rate_limiter.check(&key, limit, window).await {
+    let rl_status = match state.rate_limiter.check(key.as_str(), limit, window).await {
         Ok(status) => status,
         Err(e) => {
             error!(target: "infra::redis", %e, "Rate Limiter Error");
@@ -67,3 +63,4 @@ pub async fn redis_rate_limit_middleware(
     response.headers_mut().extend(headers);
     response
 }
+//# endregion

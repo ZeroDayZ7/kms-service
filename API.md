@@ -375,6 +375,53 @@ curl -X POST http://127.0.0.1:7000/api/v1/admin/kms/rewrap \
 
 ---
 
+### 10. Zdalne Podpisywanie Danych / JWT (Sign Data)
+
+**Endpoint:** `POST /api/v1/keys/sign`
+
+Umożliwia bezbieczne podpisywanie ciągów danych (np. bajtów `header.payload` tokena JWT) wewnątrz KMS. Klucz prywatny nie opuszcza pamięci KMS (Zero-Trust isolation).
+
+**Wymagane nagłówki:**
+
+- `Content-Type: application/json`
+- `X-Service-Name`, `X-Timestamp`, `X-HMAC-Signature`
+
+**Parametry żądania (`body`):**
+
+- `target_service` (string, wymagane) – identyfikator kluczadocelowego w ACL (np. `"shared-jwt"`)
+- `algorithm` (string, wymagane) – algorytm podpisu (np. `"Ed25519"`)
+- `payload_b64` (string, wymagane) – dane do podpisania zakodowane w formacie Base64
+- `key_version` (number, opcjonalne) – konkretna wersja klucza; jeśli `null`, KMS użyje aktywnego klucza
+
+**Przykład cURL:**
+
+```bash
+curl -X POST [http://127.0.0.1:7000/api/v1/keys/sign](http://127.0.0.1:7000/api/v1/keys/sign) \
+  -H "Content-Type: application/json" \
+  -H "X-Service-Name: auth-service" \
+  -H "X-Timestamp: 1770000000" \
+  -H "X-HMAC-Signature: <wyliczony_podpis_hmac>" \
+  -d '{
+    "target_service": "shared-jwt",
+    "algorithm": "Ed25519",
+    "payload_b64": "ZXlKaGJHY2lPaUpUVXpVTz...",
+    "key_version": null
+  }'
+
+```
+
+**Odpowiedź (200 OK):**
+
+```json
+{
+  "signature_b64": "dGhpcyBpcyBhIHNpZ25hdHVyZQ...",
+  "key_version": 1,
+  "algorithm": "Ed25519"
+}
+```
+
+---
+
 ## Interfejs Wiersza Poleceń (CLI Commands)
 
 Aplikacja wspiera również bezpośrednie wykonywanie zadań z poziomu terminala bez konieczności uruchamiania serwera HTTP.

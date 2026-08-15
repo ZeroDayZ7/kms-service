@@ -17,3 +17,5 @@ cargo test --all-targets --all-features
 key_pairs
 
 cargo run
+
+cargo run -- serve

@@ -18,6 +18,12 @@ pub trait KeyRepository: Send + Sync {
         service_id: &ServiceId,
         algo: KeyAlgorithm,
     ) -> impl std::future::Future<Output = AppResult<Option<KeyPairEntity>>> + Send;
+    fn get_key_by_version(
+        &self,
+        service_id: &ServiceId,
+        algo: KeyAlgorithm,
+        version: u32,
+    ) -> impl std::future::Future<Output = AppResult<Option<KeyPairEntity>>> + Send;
     fn get_all_active_public_keys(
         &self,
     ) -> impl std::future::Future<Output = AppResult<Vec<KeyPairEntity>>> + Send;

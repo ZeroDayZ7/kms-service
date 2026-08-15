@@ -1,8 +1,9 @@
 use crate::application::use_cases::{
     DecryptDataUseCase, EncryptDataUseCase, GenerateKeyPairUseCase, GetPrivateKeyUseCase,
-    GetPublicKeyUseCase, GetSymmetricKeyUseCase, RotateKeyUseCase,
+    GetPublicKeyUseCase, GetSymmetricKeyUseCase, RotateKeyUseCase, SignDataUseCase,
 };
 use crate::config::Settings;
+use crate::domain::rate_limiter::{InMemoryRateLimiter, RateLimiter};
 use crate::errors::AppResult;
 use crate::infrastructure::crypto::kms_service::KmsCryptoService;
 use crate::infrastructure::mongodb::audit::MongoAuditRepository;
@@ -23,6 +24,7 @@ pub type ConcreteGetPrivateKeyUseCase =
 pub type ConcreteGetSymmetricKeyUseCase =
     GetSymmetricKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
 pub type ConcreteRotateKeyUseCase = RotateKeyUseCase<MongoKeyRepository, MongoAuditRepository>;
+pub type ConcreteSignDataUseCase = SignDataUseCase<MongoKeyRepository, MongoAuditRepository>;
 
 pub struct UseCases {
     pub encrypt_data: Arc<ConcreteEncryptDataUseCase>,
@@ -32,23 +34,35 @@ pub struct UseCases {
     pub get_private_key: Arc<ConcreteGetPrivateKeyUseCase>,
     pub get_symmetric_key: Arc<ConcreteGetSymmetricKeyUseCase>,
     pub rotate_key: Arc<ConcreteRotateKeyUseCase>,
+    pub sign_data: Arc<ConcreteSignDataUseCase>,
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub settings: Arc<Settings>,
     pub use_cases: Arc<UseCases>,
-    pub redis_rate_limiter: Arc<RedisRateLimiter>,
+    pub rate_limiter: Arc<dyn RateLimiter>,
     pub db: Database,
-    pub redis_manager: Arc<RedisManager>,
+    pub redis_manager: Option<Arc<RedisManager>>,
     pub key_repo: Arc<MongoKeyRepository>,
     pub crypto_service: Arc<KmsCryptoService>,
 }
 
 impl AppState {
+    //# region new
     pub async fn new(settings: Arc<Settings>) -> AppResult<Self> {
         let mongo_db = init_mongo(&settings.database).await?;
-        let redis_manager = Arc::new(RedisManager::new(&settings.redis).await?);
+
+        let redis_manager = if settings.redis.enabled {
+            Some(Arc::new(RedisManager::new(&settings.redis).await?))
+        } else {
+            None
+        };
+
+        let rate_limiter: Arc<dyn RateLimiter> = match redis_manager.as_ref() {
+            Some(redis) => Arc::new(RedisRateLimiter::new(redis.clone()).await),
+            None => Arc::new(InMemoryRateLimiter::new()),
+        };
 
         let db_pool = Arc::new(mongo_db.clone());
 
@@ -59,7 +73,6 @@ impl AppState {
 
         let crypto_service = Arc::new(KmsCryptoService::new(&settings.crypto)?);
 
-        // Start expiration worker
         let _ =
             crate::workers::expiration::run_expiration_worker(key_repo.clone(), audit_repo.clone())
                 .await;
@@ -96,6 +109,13 @@ impl AppState {
             Arc::new(settings.acl.clone()),
         ));
 
+        let sign_data_use_case = Arc::new(SignDataUseCase::new(
+            key_repo.clone(),
+            audit_repo.clone(),
+            crypto_service.clone(),
+            Arc::new(settings.acl.clone()),
+        ));
+
         Ok(Self {
             settings,
             use_cases: Arc::new(UseCases {
@@ -106,12 +126,14 @@ impl AppState {
                 get_private_key: get_private_key_use_case,
                 get_symmetric_key: get_symmetric_key_use_case,
                 rotate_key: rotate_key_use_case,
+                sign_data: sign_data_use_case,
             }),
-            redis_rate_limiter: Arc::new(RedisRateLimiter::new(Arc::clone(&redis_manager)).await),
+            rate_limiter,
             db: mongo_db,
             redis_manager,
             key_repo,
             crypto_service,
         })
     }
+    //# endregion
 }
