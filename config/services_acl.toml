@@ -6,9 +6,7 @@ allowed_access = [
     { target_service = "auth-service", algorithm = "Ed25519", access_level = "PublicKey" },
     { target_service = "shared-jwt", algorithm = "Ed25519", access_level = "PrivateKey" },
 
-    { target_service = "hmac-gateway-auth", algorithm = "HmacSha256", access_level = "SecretKey" },
-    
-    # { target_service = "hmac-auth-internal", algorithm = "HmacSha256", access_level = "SecretKey" }
+    { target_service = "hmac-gateway-auth", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
 
 [acl.services.gateway_service]
@@ -19,8 +17,18 @@ allowed_access = [
     { target_service = "shared-jwt", algorithm = "Ed25519", access_level = "PublicKey" },
 
     { target_service = "hmac-gateway-auth", algorithm = "HmacSha256", access_level = "SecretKey" },
+    { target_service = "hmac-gateway-identity", algorithm = "HmacSha256", access_level = "SecretKey" },
     { target_service = "hmac-gateway-docs", algorithm = "HmacSha256", access_level = "SecretKey" },
     { target_service = "hmac-gateway-messaging", algorithm = "HmacSha256", access_level = "SecretKey" }
+]
+
+[acl.services.identity_service]
+service_id = "identity-service"
+secret = "super-long-random-secret-for-identity-service-hmac-64-bytes"
+allowed_access = [
+    { target_service = "identity-citizen-data", algorithm = "AES256GCM", access_level = "SecretKey" },
+
+    { target_service = "hmac-gateway-identity", algorithm = "HmacSha256", access_level = "SecretKey" }
 ]
 
 [acl.services.citizen_docs_service]
