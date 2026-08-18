@@ -2,6 +2,7 @@ use crate::application::use_cases::{
     DecryptDataUseCase, EncryptDataUseCase, GenerateKeyPairUseCase, GetPrivateKeyUseCase,
     GetPublicKeyUseCase, GetSymmetricKeyUseCase, RotateKeyUseCase, SignDataUseCase,
 };
+use crate::bootstrap::SecureStorageKey;
 use crate::config::Settings;
 use crate::domain::rate_limiter::{InMemoryRateLimiter, RateLimiter};
 use crate::errors::AppResult;
@@ -46,6 +47,7 @@ pub struct AppState {
     pub redis_manager: Option<Arc<RedisManager>>,
     pub key_repo: Arc<MongoKeyRepository>,
     pub crypto_service: Arc<KmsCryptoService>,
+    pub storage_key: Option<Arc<SecureStorageKey>>,
 }
 
 impl AppState {
@@ -133,7 +135,16 @@ impl AppState {
             redis_manager,
             key_repo,
             crypto_service,
+            storage_key: None,
         })
+    }
+
+    pub fn set_storage_key(&mut self, key: SecureStorageKey) {
+        self.storage_key = Some(Arc::new(key));
+    }
+
+    pub fn is_unlocked(&self) -> bool {
+        self.storage_key.is_some()
     }
     //# endregion
 }

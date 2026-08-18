@@ -54,9 +54,11 @@ async-trait = "0.1.91"
 rand = "0.10"
 base64 = "0.22.1"
 serde_bytes = "0.11.19"
+ssss = "1.0.6"
 
 [dev-dependencies]
 tokio = { version = "1.53", features = ["full"] }
 testcontainers = "0.27.3"
 testcontainers-modules = "0.15.0"
 toml = "0.8"
+tempfile = "3.12"

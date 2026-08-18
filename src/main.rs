@@ -1,10 +1,11 @@
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use kms_service::application::use_cases::rewrap_keys::{RewrapKeysInput, rewrap_keys};
-use kms_service::bootstrap::bootstrap_keys;
+use kms_service::bootstrap::{bootstrap_keys, recover_storage_key_from_ceremony};
 use kms_service::config;
 use kms_service::server::{self, state::AppState};
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::{error, info};
 
@@ -18,7 +19,12 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     Serve,
-    Bootstrap,
+    Bootstrap {
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        shares_dir: PathBuf,
+    },
     Rewrap {
         #[arg(long)]
         target_version: i32,
@@ -71,10 +77,25 @@ async fn run_command(cli: Cli) -> anyhow::Result<()> {
 
             info!("✅ Server shutdown complete");
         }
-        Command::Bootstrap => {
+        Command::Bootstrap {
+            manifest,
+            shares_dir,
+        } => {
             let state = AppState::new(settings.clone())
                 .await
                 .context("Krytyczny błąd inicjalizacji AppState")?;
+
+            let recovered_storage_key = recover_storage_key_from_ceremony(&manifest, &shares_dir)
+                .context(
+                "Failed to recover the storage key from ceremony manifest and shares",
+            )?;
+
+            let mut state = state;
+            state.set_storage_key(recovered_storage_key);
+
+            info!(
+                "✅ Ceremony bootstrap succeeded. Storage key recovered in memory and marked as READY/UNLOCKED."
+            );
 
             bootstrap_keys(
                 &settings.acl,
