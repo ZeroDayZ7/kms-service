@@ -19,3 +19,5 @@ key_pairs
 cargo run
 
 cargo run -- serve
+
+cargo build --release

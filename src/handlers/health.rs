@@ -10,6 +10,7 @@ pub struct HealthResponse {
     status: &'static str,
     database: &'static str,
     redis: &'static str,
+    kms: &'static str,
 }
 
 //# region health
@@ -38,6 +39,7 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         _ => "error",
     };
 
+    let kms_status = if state.is_unlocked() { "ready" } else { "locked" };
     let is_ok = db_status == "ok" && (redis_status == "ok" || redis_status == "disabled");
 
     let status_code = if is_ok {
@@ -52,6 +54,7 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
             status: if is_ok { "ok" } else { "degraded" },
             database: db_status,
             redis: redis_status,
+            kms: kms_status,
         }),
     )
 }
