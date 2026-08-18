@@ -86,7 +86,9 @@ async fn run_command(cli: Cli) -> anyhow::Result<()> {
                 .context("Krytyczny błąd inicjalizacji AppState")?;
 
             let recovered_storage_key = recover_storage_key_from_ceremony(&manifest, &shares_dir)
-                .context("Failed to recover the storage key from ceremony manifest and shares")?;
+                .context(
+                "Failed to recover the storage key from ceremony manifest and shares",
+            )?;
 
             let mut state = state;
             state.set_storage_key(recovered_storage_key);

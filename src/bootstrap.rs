@@ -1,4 +1,7 @@
-use aes_gcm::{Aes256Gcm, Nonce, aead::{Aead, KeyInit}};
+use aes_gcm::{
+    Aes256Gcm, Nonce,
+    aead::{Aead, KeyInit},
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -62,9 +65,8 @@ pub fn compute_share_sha256(share_hex: &str) -> String {
 }
 
 fn decode_hex<const N: usize>(hex_value: &str, field: &str) -> AppResult<[u8; N]> {
-    let bytes = hex::decode(hex_value).map_err(|err| {
-        AppError::CryptoError(format!("Invalid hex for {field}: {err}"))
-    })?;
+    let bytes = hex::decode(hex_value)
+        .map_err(|err| AppError::CryptoError(format!("Invalid hex for {field}: {err}")))?;
 
     if bytes.len() != N {
         return Err(AppError::CryptoError(format!(
@@ -113,12 +115,14 @@ fn validate_share_record(record: &ShareFileRecord, manifest: &CeremonyManifest) 
 
 fn read_share_file(path: &Path) -> AppResult<ShareFileRecord> {
     let content = fs::read_to_string(path).map_err(|err| {
-        AppError::RuntimeError(format!("Failed to read share file {}: {err}", path.display()))
+        AppError::RuntimeError(format!(
+            "Failed to read share file {}: {err}",
+            path.display()
+        ))
     })?;
 
-    let record: ShareFileRecord = serde_json::from_str(&content).map_err(|err| {
-        AppError::SerializationError(err)
-    })?;
+    let record: ShareFileRecord =
+        serde_json::from_str(&content).map_err(AppError::SerializationError)?;
 
     Ok(record)
 }
@@ -131,12 +135,14 @@ pub fn recover_storage_key_from_ceremony(
     let share_dir = share_dir.as_ref();
 
     let manifest_content = fs::read_to_string(manifest_path).map_err(|err| {
-        AppError::RuntimeError(format!("Failed to read ceremony manifest {}: {err}", manifest_path.display()))
+        AppError::RuntimeError(format!(
+            "Failed to read ceremony manifest {}: {err}",
+            manifest_path.display()
+        ))
     })?;
 
-    let manifest: CeremonyManifest = serde_json::from_str(&manifest_content).map_err(|err| {
-        AppError::SerializationError(err)
-    })?;
+    let manifest: CeremonyManifest =
+        serde_json::from_str(&manifest_content).map_err(AppError::SerializationError)?;
 
     let mut selected_shares = Vec::new();
     for file_name in &manifest.share_files {
@@ -164,7 +170,9 @@ pub fn recover_storage_key_from_ceremony(
 
     let mut master_key = [0u8; 32];
     let recovered = unlock(&selected_shares[..manifest.threshold as usize]).map_err(|err| {
-        AppError::CryptoError(format!("Failed to reconstruct master key from shares: {err}"))
+        AppError::CryptoError(format!(
+            "Failed to reconstruct master key from shares: {err}"
+        ))
     })?;
 
     if recovered.len() != 32 {
@@ -176,19 +184,25 @@ pub fn recover_storage_key_from_ceremony(
 
     master_key.copy_from_slice(&recovered);
 
-    let nonce = decode_hex::<12>(&manifest.encrypted_storage_key_nonce, "encrypted_storage_key_nonce")?;
-    let ciphertext = hex::decode(&manifest.encrypted_storage_key_ciphertext).map_err(|err| {
-        AppError::CryptoError(format!("Invalid ciphertext hex: {err}"))
-    })?;
+    let nonce = decode_hex::<12>(
+        &manifest.encrypted_storage_key_nonce,
+        "encrypted_storage_key_nonce",
+    )?;
+    let ciphertext = hex::decode(&manifest.encrypted_storage_key_ciphertext)
+        .map_err(|err| AppError::CryptoError(format!("Invalid ciphertext hex: {err}")))?;
 
     let cipher = Aes256Gcm::new_from_slice(&master_key).map_err(|err| {
-        AppError::CryptoError(format!("Failed to initialize AES-GCM with recovered master key: {err}"))
+        AppError::CryptoError(format!(
+            "Failed to initialize AES-GCM with recovered master key: {err}"
+        ))
     })?;
 
     let nonce_value = Nonce::from_slice(&nonce);
-    let mut raw_key = cipher.decrypt(nonce_value, ciphertext.as_ref()).map_err(|_| {
-        AppError::CryptoError("Failed to decrypt storage key with recovered master key".into())
-    })?;
+    let mut raw_key = cipher
+        .decrypt(nonce_value, ciphertext.as_ref())
+        .map_err(|_| {
+            AppError::CryptoError("Failed to decrypt storage key with recovered master key".into())
+        })?;
 
     if raw_key.len() != 32 {
         raw_key.zeroize();
@@ -296,7 +310,10 @@ mod tests {
         let storage_key = [7u8; 32];
 
         let shares = ssss::gen_shares(
-            &ssss::SsssConfig::builder().num_shares(5).threshold(3).build(),
+            &ssss::SsssConfig::builder()
+                .num_shares(5)
+                .threshold(3)
+                .build(),
             &master_key,
         )
         .unwrap();
@@ -317,7 +334,9 @@ mod tests {
 
         let nonce = [1u8; 12];
         let cipher = Aes256Gcm::new_from_slice(&master_key).unwrap();
-        let ciphertext = cipher.encrypt(Nonce::from_slice(&nonce), &storage_key[..]).unwrap();
+        let ciphertext = cipher
+            .encrypt(Nonce::from_slice(&nonce), &storage_key[..])
+            .unwrap();
 
         let manifest = CeremonyManifest {
             id: Uuid::new_v4(),
@@ -325,7 +344,11 @@ mod tests {
             created_at: Utc::now(),
             threshold: 3,
             total_shares: 5,
-            share_files: vec!["share_1.json".to_string(), "share_2.json".to_string(), "share_3.json".to_string()],
+            share_files: vec![
+                "share_1.json".to_string(),
+                "share_2.json".to_string(),
+                "share_3.json".to_string(),
+            ],
             encrypted_storage_key_nonce: hex::encode(nonce),
             encrypted_storage_key_ciphertext: hex::encode(ciphertext),
         };
