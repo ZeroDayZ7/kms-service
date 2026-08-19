@@ -25,6 +25,7 @@ enum Command {
         #[arg(long)]
         shares_dir: PathBuf,
     },
+    Lock,
     Rewrap {
         #[arg(long)]
         target_version: i32,
@@ -134,6 +135,14 @@ async fn run_command(cli: Cli) -> anyhow::Result<()> {
                 "✅ Rewrapped {} keys to master version {}",
                 count, target_version
             );
+        }
+        Command::Lock => {
+            let state = AppState::new(settings.clone())
+                .await
+                .context("Krytyczny błąd inicjalizacji AppState")?;
+
+            state.clear_storage_key().await;
+            info!("🔒 KMS locked: master key cleared from memory.");
         }
     }
 

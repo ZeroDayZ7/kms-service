@@ -39,6 +39,14 @@ pub async fn unlock_handler(
     Ok(Json(serde_json::json!({ "status": "READY" })))
 }
 
+pub async fn lock_handler(
+    State(state): State<AppState>,
+    AuthenticatedService(_caller): AuthenticatedService,
+) -> AppResult<Json<serde_json::Value>> {
+    state.clear_storage_key().await;
+    Ok(Json(serde_json::json!({ "status": "LOCKED" })))
+}
+
 #[derive(Debug, Deserialize)]
 pub struct RewrapKeysRequest {
     pub target_version: i32,
@@ -50,12 +58,6 @@ pub async fn rewrap_keys_handler(
     AuthenticatedService(_caller): AuthenticatedService,
     Json(payload): Json<RewrapKeysRequest>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !state.settings.crypto.enable_http_rewrap {
-        return Err(AppError::ValidationError(
-            "HTTP rewrap is disabled by server configuration".into(),
-        ));
-    }
-
     let count = rewrap_keys(
         state.key_repo.clone(),
         state.crypto_service.clone(),
