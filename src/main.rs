@@ -57,13 +57,17 @@ async fn run_command(cli: Cli) -> anyhow::Result<()> {
 
             info!("🧠 Application state initialized");
 
-            bootstrap_keys(
-                &settings.acl,
-                state.key_repo.clone(),
-                state.crypto_service.clone(),
-            )
-            .await
-            .context("Krytyczny błąd bootstrapu kluczy KMS")?;
+            if state.is_unlocked() {
+                bootstrap_keys(
+                    &settings.acl,
+                    state.key_repo.clone(),
+                    state.crypto_service.clone(),
+                )
+                .await
+                .context("Krytyczny błąd bootstrapu kluczy KMS")?;
+            } else {
+                info!("KMS is locked; skipping automatic bootstrap of service keys.");
+            }
 
             let addr: SocketAddr = format!("{}:{}", settings.server.host, settings.server.port)
                 .parse()
@@ -90,8 +94,8 @@ async fn run_command(cli: Cli) -> anyhow::Result<()> {
                 "Failed to recover the storage key from ceremony manifest and shares",
             )?;
 
-            let mut state = state;
-            state.set_storage_key(recovered_storage_key);
+            let state = state;
+            state.set_storage_key(recovered_storage_key).await;
 
             info!(
                 "✅ Ceremony bootstrap succeeded. Storage key recovered in memory and marked as READY/UNLOCKED."

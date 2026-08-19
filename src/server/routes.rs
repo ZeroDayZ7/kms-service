@@ -17,10 +17,17 @@ pub fn router(state: AppState) -> Router {
         middleware::redis_rate_limit_middleware,
     );
 
+    let kms_mw =
+        axum::middleware::from_fn_with_state(state.clone(), middleware::kms_lock_middleware);
+
     Router::new()
         .route(
             "/health",
             get(health::health).layer(rate_limits.health.clone()),
+        )
+        .route(
+            "/status",
+            get(health::status).layer(rate_limits.health.clone()),
         )
         .route(
             "/api/v1/keys/generate",
@@ -51,6 +58,10 @@ pub fn router(state: AppState) -> Router {
             post(admin::rewrap_keys_handler).layer(rate_limits.auth.clone()),
         )
         .route(
+            "/api/v1/admin/ceremony/unlock",
+            post(admin::unlock_handler).layer(rate_limits.auth.clone()),
+        )
+        .route(
             "/api/v1/encrypt",
             post(crypto::encrypt_handler).layer(rate_limits.auth.clone()),
         )
@@ -60,6 +71,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route_layer(rate_limits.global.clone())
         .layer(redis_mw)
+        .layer(kms_mw)
         .layer(security)
         .layer(cors)
         .layer(middleware::http_trace_layer())
