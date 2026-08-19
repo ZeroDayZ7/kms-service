@@ -62,4 +62,27 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         }),
     )
 }
+
+#[derive(Serialize)]
+struct StatusResponse {
+    status: &'static str,
+    manifest_loaded: bool,
+}
+
+pub async fn status(State(state): State<AppState>) -> impl IntoResponse {
+    let manifest_loaded = std::path::Path::new("ceremony_manifest.json").exists();
+    let status = if state.is_unlocked() {
+        "READY"
+    } else {
+        "LOCKED"
+    };
+
+    (
+        StatusCode::OK,
+        Json(StatusResponse {
+            status,
+            manifest_loaded,
+        }),
+    )
+}
 //# endregion

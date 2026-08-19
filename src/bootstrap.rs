@@ -220,6 +220,83 @@ pub fn recover_storage_key_from_ceremony(
     Ok(SecureStorageKey::from_bytes(storage_key_bytes))
 }
 
+/// Recover storage key by using shares provided directly (e.g. via HTTP request).
+pub fn recover_storage_key_from_shares(
+    manifest_path: impl AsRef<Path>,
+    shares: &[String],
+) -> AppResult<SecureStorageKey> {
+    let manifest_path = manifest_path.as_ref();
+
+    let manifest_content = fs::read_to_string(manifest_path).map_err(|err| {
+        AppError::RuntimeError(format!(
+            "Failed to read ceremony manifest {}: {err}",
+            manifest_path.display()
+        ))
+    })?;
+
+    let manifest: CeremonyManifest =
+        serde_json::from_str(&manifest_content).map_err(AppError::SerializationError)?;
+
+    if shares.len() < manifest.threshold as usize {
+        return Err(AppError::ValidationError(format!(
+            "Need at least {} shares, got {}",
+            manifest.threshold,
+            shares.len()
+        )));
+    }
+
+    let recovered = unlock(&shares[..manifest.threshold as usize]).map_err(|err| {
+        AppError::CryptoError(format!(
+            "Failed to reconstruct master key from shares: {err}"
+        ))
+    })?;
+
+    if recovered.len() != 32 {
+        return Err(AppError::CryptoError(format!(
+            "Recovered master key has invalid length: expected 32 bytes, got {}",
+            recovered.len()
+        )));
+    }
+
+    let mut master_key = [0u8; 32];
+    master_key.copy_from_slice(&recovered);
+
+    let nonce = decode_hex::<12>(
+        &manifest.encrypted_storage_key_nonce,
+        "encrypted_storage_key_nonce",
+    )?;
+    let ciphertext = hex::decode(&manifest.encrypted_storage_key_ciphertext)
+        .map_err(|err| AppError::CryptoError(format!("Invalid ciphertext hex: {err}")))?;
+
+    let cipher = Aes256Gcm::new_from_slice(&master_key).map_err(|err| {
+        AppError::CryptoError(format!(
+            "Failed to initialize AES-GCM with recovered master key: {err}"
+        ))
+    })?;
+
+    let nonce_value = Nonce::from_slice(&nonce);
+    let mut raw_key = cipher
+        .decrypt(nonce_value, ciphertext.as_ref())
+        .map_err(|_| {
+            AppError::CryptoError("Failed to decrypt storage key with recovered master key".into())
+        })?;
+
+    if raw_key.len() != 32 {
+        raw_key.zeroize();
+        master_key.zeroize();
+        return Err(AppError::CryptoError(
+            "Recovered storage key is not 32 bytes long".into(),
+        ));
+    }
+
+    let mut storage_key_bytes = [0u8; 32];
+    storage_key_bytes.copy_from_slice(&raw_key);
+    raw_key.zeroize();
+    master_key.zeroize();
+
+    Ok(SecureStorageKey::from_bytes(storage_key_bytes))
+}
+
 pub async fn bootstrap_keys<R>(
     acl_settings: &AclSettings,
     key_repo: Arc<R>,

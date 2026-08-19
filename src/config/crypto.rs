@@ -96,6 +96,8 @@ pub struct CryptoSettings {
     pub grace_period_minutes: GracePeriodMinutes,
     #[serde(default)]
     pub enable_http_rewrap: bool,
+    #[serde(default)]
+    pub enable_http_lock: bool,
 }
 
 impl CryptoSettings {

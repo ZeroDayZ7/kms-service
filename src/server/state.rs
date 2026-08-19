@@ -47,7 +47,9 @@ pub struct AppState {
     pub redis_manager: Option<Arc<RedisManager>>,
     pub key_repo: Arc<MongoKeyRepository>,
     pub crypto_service: Arc<KmsCryptoService>,
-    pub storage_key: Option<Arc<SecureStorageKey>>,
+    pub storage_key: Arc<tokio::sync::RwLock<Option<Arc<SecureStorageKey>>>>,
+    /// Simple, synchronous flag to indicate whether KMS is unlocked and ready.
+    pub kms_unlocked: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl AppState {
@@ -135,16 +137,30 @@ impl AppState {
             redis_manager,
             key_repo,
             crypto_service,
-            storage_key: None,
+            storage_key: Arc::new(tokio::sync::RwLock::new(None)),
+            kms_unlocked: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         })
     }
 
-    pub fn set_storage_key(&mut self, key: SecureStorageKey) {
-        self.storage_key = Some(Arc::new(key));
+    /// Set the in-memory storage key and mark KMS as unlocked.
+    pub async fn set_storage_key(&self, key: SecureStorageKey) {
+        let arc_key = Arc::new(key);
+        let mut w = self.storage_key.write().await;
+        *w = Some(arc_key);
+        self.kms_unlocked
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Clear the in-memory storage key and mark KMS as locked.
+    pub async fn clear_storage_key(&self) {
+        let mut w = self.storage_key.write().await;
+        *w = None;
+        self.kms_unlocked
+            .store(false, std::sync::atomic::Ordering::SeqCst);
     }
 
     pub fn is_unlocked(&self) -> bool {
-        self.storage_key.is_some()
+        self.kms_unlocked.load(std::sync::atomic::Ordering::SeqCst)
     }
     //# endregion
 }

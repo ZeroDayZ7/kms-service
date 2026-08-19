@@ -4,12 +4,14 @@
     "**/target": true,
     "**/Cargo.lock": true,
     "**/.git": true,
+    "**/.github": true,
+    "**/docker-entrypoint-initdb.d": true,
     // "**/.vscode": true,
-    // "**/tests": true,
+    "**/tests": true,
     "LICENSE": true
     // ".env.example": true
-    // "README.md": true
     // "**/.env": true
+    // "README.md": true
   },
   "search.exclude": {
     "**/target": true,
